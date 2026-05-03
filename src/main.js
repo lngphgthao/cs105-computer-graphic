@@ -1,3 +1,10 @@
+import * as THREE from "three";
+import { initPlayer, updatePlayer } from "./gameplay/playerController";
+import { getPlayer } from "./gameplay/playerController";
+import { spawnCoins, spawnObstacles } from "./gameplay/spawnSystem";
+import { checkCollision } from "./gameplay/collisionSystem";
+import { updateCameraFollow } from "./gameplay/cameraSystem";
+
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { createScene } from "./core/scene";
 import { createRenderer } from "./core/renderer";
@@ -34,9 +41,9 @@ const camera = createCamera({
 
 setupLighting(scene);
 
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.target.set(0, 2, 0);
+// const controls = new OrbitControls(camera, renderer.domElement);
+// controls.enableDamping = true;
+// controls.target.set(0, 2, 0);
 
 const ground = createGround();
 scene.add(ground);
@@ -45,6 +52,12 @@ const demoObjects = createDemoObjects();
 for (const object of demoObjects) {
 	scene.add(object);
 }
+
+initPlayer(scene);
+
+const coins = spawnCoins(scene, 5);
+const obstacles = spawnObstacles(scene, 3);
+
 
 const transformController = createTransformController(demoObjects);
 
@@ -151,6 +164,13 @@ let previousTime = performance.now();
 function animate(now) {
 	const deltaSeconds = (now - previousTime) / 1000;
 	previousTime = now;
+	
+	updatePlayer(deltaSeconds);
+	const player = getPlayer();
+
+	checkCollision(player, coins, obstacles, scene);
+	updateCameraFollow(camera, player);
+
 
 	for (const object of demoObjects) {
 		if (object.userData.spinSpeed) {
@@ -158,7 +178,7 @@ function animate(now) {
 		}
 	}
 
-	controls.update();
+	// controls.update();
 	renderer.render(scene, camera);
 	requestAnimationFrame(animate);
 }
