@@ -1,11 +1,14 @@
 import * as THREE from "three";
+import { getGameOver } from "./gameState";
 
 let player;
 const keys = {};
-const speed = 6;
+let baseSpeed = 10;
+let speed = baseSpeed;
 
-const previousPosition = new THREE.Vector3();
-const direction = new THREE.Vector3();
+const lanes = [-2, 0, 2];
+let currentLane = 1; // Start in center lane
+let timeAlive = 0;
 
 export function initPlayer(scene) {
   player = new THREE.Group();
@@ -24,7 +27,15 @@ export function initPlayer(scene) {
   scene.add(player);
 
   window.addEventListener("keydown", (e) => {
-    keys[e.key.toLowerCase()] = true;
+    const key = e.key.toLowerCase();
+    if (!keys[key] && !getGameOver()) {
+      if ((key === "a" || key === "arrowleft") && currentLane > 0) {
+        currentLane--;
+      } else if ((key === "d" || key === "arrowright") && currentLane < 2) {
+        currentLane++;
+      }
+    }
+    keys[key] = true;
   });
 
   window.addEventListener("keyup", (e) => {
@@ -33,22 +44,20 @@ export function initPlayer(scene) {
 }
 
 export function updatePlayer(delta) {
-  if (!player) return;
+  if (!player || getGameOver()) return;
+
+  timeAlive += delta;
+  speed = baseSpeed + timeAlive * 0.2; // Difficulty scaling: speed increases over time
 
   // lưu vị trí cũ
   player.userData.prevPosition.copy(player.position);
 
-  direction.set(0, 0, 0);
+  // Auto-run movement (forward is negative Z)
+  player.position.z -= speed * delta;
 
-  if (keys["w"]) direction.z -= 1;
-  if (keys["s"]) direction.z += 1;
-  if (keys["a"]) direction.x -= 1;
-  if (keys["d"]) direction.x += 1;
-
-  if (direction.lengthSq() > 0) {
-    direction.normalize().multiplyScalar(speed * delta);
-    player.position.add(direction);
-  }
+  // Smooth lane transition
+  const targetX = lanes[currentLane];
+  player.position.x = THREE.MathUtils.lerp(player.position.x, targetX, 10 * delta);
 
   // khóa trục Y
   player.position.y = 0.5;
