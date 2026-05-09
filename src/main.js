@@ -3,7 +3,8 @@ import { initPlayer, updatePlayer } from "./gameplay/playerController";
 import { getPlayer } from "./gameplay/playerController";
 import { spawnCoins, spawnObstacles } from "./gameplay/spawnSystem";
 import { checkCollision } from "./gameplay/collisionSystem";
-import { updateCameraFollow } from "./gameplay/cameraSystem";
+import { updateCameraFollow } from "./gameplay/cameraSystem";	
+import { addScore, getScore } from "./gameplay/gameState";
 
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { createScene } from "./core/scene";
@@ -24,6 +25,11 @@ import { createTransformController } from "./gameplay/transformController";
 import { createModelLoader } from "./gameplay/modelLoader";
 import { createRenderModeController } from "./ui/renderModeController";
 import "./styles.css";
+
+document.addEventListener("coinCollected", (e) => {
+  addScore(e.detail.value);
+  console.log("Score:", getScore());
+});
 
 const app = document.getElementById("app");
 if (!app) {
