@@ -1,8 +1,14 @@
 import * as THREE from "three";
+import { getGameOver } from "./gameState";
 
 let player;
 const keys = {};
-const speed = 6;
+let baseSpeed = 10;
+let speed = baseSpeed;
+
+const lanes = [-2, 0, 2];
+let currentLane = 1; // Start in center lane
+let timeAlive = 0;
 
 export function initPlayer(scene) {
   player = new THREE.Group();
@@ -15,14 +21,21 @@ export function initPlayer(scene) {
   player.add(mesh);
   player.position.set(0, 0.5, 5);
 
-  // đánh dấu để debug tool không đụng vào
   player.userData.type = "player";
+  player.userData.prevPosition = new THREE.Vector3();
 
   scene.add(player);
 
-  // input riêng (KHÔNG đụng hệ cũ)
   window.addEventListener("keydown", (e) => {
-    keys[e.key.toLowerCase()] = true;
+    const key = e.key.toLowerCase();
+    if (!keys[key] && !getGameOver()) {
+      if ((key === "a" || key === "arrowleft") && currentLane > 0) {
+        currentLane--;
+      } else if ((key === "d" || key === "arrowright") && currentLane < 2) {
+        currentLane++;
+      }
+    }
+    keys[key] = true;
   });
 
   window.addEventListener("keyup", (e) => {
@@ -31,19 +44,23 @@ export function initPlayer(scene) {
 }
 
 export function updatePlayer(delta) {
-  if (!player) return;
+  if (!player || getGameOver()) return;
 
-  const dir = new THREE.Vector3();
+  timeAlive += delta;
+  speed = baseSpeed + timeAlive * 0.2; // Difficulty scaling: speed increases over time
 
-  if (keys["w"]) dir.z -= 1;
-  if (keys["s"]) dir.z += 1;
-  if (keys["a"]) dir.x -= 1;
-  if (keys["d"]) dir.x += 1;
+  // lưu vị trí cũ
+  player.userData.prevPosition.copy(player.position);
 
-  if (dir.length() > 0) {
-    dir.normalize().multiplyScalar(speed * delta);
-    player.position.add(dir);
-  }
+  // Auto-run movement (forward is negative Z)
+  player.position.z -= speed * delta;
+
+  // Smooth lane transition
+  const targetX = lanes[currentLane];
+  player.position.x = THREE.MathUtils.lerp(player.position.x, targetX, 10 * delta);
+
+  // khóa trục Y
+  player.position.y = 0.5;
 }
 
 export function getPlayer() {

@@ -1,9 +1,10 @@
 import * as THREE from "three";
 import { initPlayer, updatePlayer } from "./gameplay/playerController";
 import { getPlayer } from "./gameplay/playerController";
-import { spawnCoins, spawnObstacles } from "./gameplay/spawnSystem";
+import { updateSpawning } from "./gameplay/spawnSystem";
 import { checkCollision } from "./gameplay/collisionSystem";
 import { updateCameraFollow } from "./gameplay/cameraSystem";
+import { addScore, getScore, getGameOver } from "./gameplay/gameState";
 
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { createScene } from "./core/scene";
@@ -24,6 +25,15 @@ import { createTransformController } from "./gameplay/transformController";
 import { createModelLoader } from "./gameplay/modelLoader";
 import { createRenderModeController } from "./ui/renderModeController";
 import "./styles.css";
+
+document.addEventListener("coinCollected", (e) => {
+	addScore(e.detail.value);
+	console.log("Score:", getScore());
+});
+
+document.addEventListener("gameOver", () => {
+	console.log("Game Over! Final Score:", Math.floor(getScore()));
+});
 
 const app = document.getElementById("app");
 if (!app) {
@@ -55,8 +65,8 @@ for (const object of demoObjects) {
 
 initPlayer(scene);
 
-const coins = spawnCoins(scene, 5);
-const obstacles = spawnObstacles(scene, 3);
+const coins = [];
+const obstacles = [];
 
 
 const transformController = createTransformController(demoObjects);
@@ -77,6 +87,8 @@ window.natureExplorer = {
 function updateHudInfo() {
 	const selectedName = transformController.getSelectedName();
 	renderModeController.setExtraInfo([
+		`Score: ${Math.floor(getScore())}`,
+		getGameOver() ? "GAME OVER" : "Playing",
 		`Selected object: ${selectedName}`,
 		`Camera position: (${camera.position.x.toFixed(1)}, ${camera.position.y.toFixed(1)}, ${camera.position.z.toFixed(1)})`,
 		`Camera projection: fov=${camera.fov.toFixed(1)}, near=${camera.near.toFixed(2)}, far=${camera.far.toFixed(1)}`,
@@ -164,9 +176,16 @@ let previousTime = performance.now();
 function animate(now) {
 	const deltaSeconds = (now - previousTime) / 1000;
 	previousTime = now;
-	
+
+	if (!getGameOver()) {
+		addScore(deltaSeconds * 5); // Distance score
+		updateHudInfo();
+	}
+
 	updatePlayer(deltaSeconds);
 	const player = getPlayer();
+
+	updateSpawning(scene, player.position.z, coins, obstacles, deltaSeconds);
 
 	checkCollision(player, coins, obstacles, scene);
 	updateCameraFollow(camera, player);
