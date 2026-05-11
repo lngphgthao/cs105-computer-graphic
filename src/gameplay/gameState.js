@@ -1,8 +1,8 @@
 let score = 0;
 let isGameOver = false;
 
-export function addScore(val) {
-    score += val;
+export function addScore(value) {
+    score += value;
 }
 
 export function getScore() {
