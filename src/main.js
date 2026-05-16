@@ -5,9 +5,9 @@ import { updateSpawning } from "./gameplay/spawnSystem";
 import { checkCollision } from "./gameplay/collisionSystem";
 import { updateCameraFollow } from "./gameplay/cameraSystem";
 import { addScore, getScore, getGameOver } from "./gameplay/gameState";
-
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { createScene } from "./core/scene";
+import { buildEnvironment } from "./environment/environmentBuilder";
 import { createRenderer } from "./core/renderer";
 import {
 	createCamera,
@@ -23,7 +23,7 @@ import {
 } from "./environment/geometries";
 import { createTransformController } from "./gameplay/transformController";
 import { createModelLoader } from "./gameplay/modelLoader";
-import { createRenderModeController } from "./ui/renderModeController";
+// import { createRenderModeController } from "./ui/renderModeController";
 import "./styles.css";
 
 document.addEventListener("coinCollected", (e) => {
@@ -45,7 +45,7 @@ const renderer = createRenderer(app);
 const camera = createCamera({
 	fov: 62,
 	near: 0.1,
-	far: 220,
+	far: 100,
 	position: { x: 12, y: 10, z: 16 },
 });
 
@@ -55,15 +55,14 @@ setupLighting(scene);
 // controls.enableDamping = true;
 // controls.target.set(0, 2, 0);
 
-const ground = createGround();
-scene.add(ground);
+// Khởi tạo mặt đất
+const terrain = createGround();
+scene.add(terrain);
 
 const demoObjects = createDemoObjects();
 for (const object of demoObjects) {
 	scene.add(object);
 }
-
-initPlayer(scene);
 
 const coins = [];
 const obstacles = [];
@@ -77,22 +76,32 @@ function applyRenderMode(mode) {
 	}
 }
 
-const renderModeController = createRenderModeController(applyRenderMode);
+// const renderModeController = createRenderModeController(applyRenderMode);
 
+// 1. KHỞI TẠO MODEL LOADER (CHỈ 1 LẦN DUY NHẤT Ở ĐÂY)
 const modelLoader = createModelLoader(scene);
+
+// 2. TRUYỀN VÀO PLAYER CONTROLLER ĐỂ TẢI THỎ
+initPlayer(scene, modelLoader);
+
+// Expose ra window để debug (nếu cần)
 window.natureExplorer = {
-	loadModel: modelLoader.loadModel,
+    loadModel: modelLoader.loadModel,
 };
 
+// 2. Chèn dòng này vào để tự động xây dựng toàn bộ khu rừng!
+buildEnvironment(scene, modelLoader);
+
+
 function updateHudInfo() {
-	const selectedName = transformController.getSelectedName();
-	renderModeController.setExtraInfo([
-		`Score: ${Math.floor(getScore())}`,
-		getGameOver() ? "GAME OVER" : "Playing",
-		`Selected object: ${selectedName}`,
-		`Camera position: (${camera.position.x.toFixed(1)}, ${camera.position.y.toFixed(1)}, ${camera.position.z.toFixed(1)})`,
-		`Camera projection: fov=${camera.fov.toFixed(1)}, near=${camera.near.toFixed(2)}, far=${camera.far.toFixed(1)}`,
-	]);
+	// const selectedName = transformController.getSelectedName();
+	// renderModeController.setExtraInfo([
+	// 	`Score: ${Math.floor(getScore())}`,
+	// 	getGameOver() ? "GAME OVER" : "Playing",
+	// 	`Selected object: ${selectedName}`,
+	// 	`Camera position: (${camera.position.x.toFixed(1)}, ${camera.position.y.toFixed(1)}, ${camera.position.z.toFixed(1)})`,
+	// 	`Camera projection: fov=${camera.fov.toFixed(1)}, near=${camera.near.toFixed(2)}, far=${camera.far.toFixed(1)}`,
+	// ]);
 }
 
 function handleCameraKeyboard(event) {
@@ -174,32 +183,32 @@ updateHudInfo();
 let previousTime = performance.now();
 
 function animate(now) {
-	const deltaSeconds = (now - previousTime) / 1000;
-	previousTime = now;
+    const deltaSeconds = (now - previousTime) / 1000;
+    previousTime = now;
 
-	if (!getGameOver()) {
-		addScore(deltaSeconds * 5); // Distance score
-		updateHudInfo();
-	}
+    if (!getGameOver()) {
+        addScore(deltaSeconds * 5); 
+        updateHudInfo();
+    }
 
-	updatePlayer(deltaSeconds);
-	const player = getPlayer();
+    // Hàm này giờ đây đã bao gồm cả di chuyển và cập nhật animation thỏ
+    updatePlayer(deltaSeconds); 
+    const player = getPlayer();
 
-	updateSpawning(scene, player.position.z, coins, obstacles, deltaSeconds);
+    updateSpawning(scene, player.position.z, coins, obstacles, deltaSeconds);
+    checkCollision(player, coins, obstacles, scene);
+    
+    // Bật lại tính năng camera bám đuôi thỏ!
+    updateCameraFollow(camera, player);
 
-	checkCollision(player, coins, obstacles, scene);
-	updateCameraFollow(camera, player);
+    for (const object of demoObjects) {
+        if (object.userData.spinSpeed) {
+            object.rotation.y += object.userData.spinSpeed * deltaSeconds;
+        }
+    }
 
-
-	for (const object of demoObjects) {
-		if (object.userData.spinSpeed) {
-			object.rotation.y += object.userData.spinSpeed * deltaSeconds;
-		}
-	}
-
-	// controls.update();
-	renderer.render(scene, camera);
-	requestAnimationFrame(animate);
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
 }
 
 requestAnimationFrame(animate);
