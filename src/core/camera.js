@@ -51,3 +51,24 @@ export function moveCamera(camera, delta) {
 	camera.position.y += delta.y ?? 0;
 	camera.position.z += delta.z ?? 0;
 }
+
+export function updateCameraFollow(camera, player) {
+	if (!player) return;
+
+	// Keep camera centered on X axis (0) so player movement is visible
+	const target = new THREE.Vector3(
+		0,
+		player.position.y + 4,
+		player.position.z + 9,
+	);
+
+	camera.position.lerp(target, 0.2);
+
+	// Look slightly ahead on the center path
+	const lookTarget = new THREE.Vector3(
+		0,
+		player.position.y + 2,
+		player.position.z,
+	);
+	camera.lookAt(lookTarget);
+}
