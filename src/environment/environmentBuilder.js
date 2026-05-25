@@ -499,24 +499,32 @@ function loadRocks(scene, modelLoader, obstacles) {
                 scene.add(rockClone);
 
                 if (obstacles) {
+                    // Đợi updateMatrixWorld để world position của từng child mesh chính xác
                     rockClone.updateMatrixWorld(true);
-                    const rockBox = new THREE.Box3().setFromObject(rockClone);
 
-                    // Dùng sphere collider thay vì AABB box
-                    // Lấy chiều nhỏ nhất trên mặt phẳng XZ để bán kính sphere luôn nằm gọn trong đá
-                    const rockCenter = new THREE.Vector3();
-                    rockBox.getCenter(rockCenter);
-                    const rockSize = new THREE.Vector3();
-                    rockBox.getSize(rockSize);
+                    // Traverse từng child Mesh (mỗi cục đá nhỏ trong model)
+                    // thay vì tính 1 Box3 bao trọn cả group → tránh block khoảng trống giữa các cục
+                    rockClone.traverse((child) => {
+                        if (!child.isMesh) return;
 
-                    // Bán kính = nửa chiều nhỏ nhất (XZ) × hệ số co (0.4) để vừa khít phần rắn của đá
-                    const minXZ = Math.min(rockSize.x, rockSize.z);
-                    const radius = minXZ * 0.4;
+                        const childBox = new THREE.Box3().setFromObject(child);
+                        const childCenter = new THREE.Vector3();
+                        childBox.getCenter(childCenter);
+                        const childSize = new THREE.Vector3();
+                        childBox.getSize(childSize);
 
-                    obstacles.push({
-                        type: 'sphere',
-                        center: new THREE.Vector2(rockCenter.x, rockCenter.z),
-                        radius: radius
+                        // Bán kính sphere = nửa chiều nhỏ nhất XZ × 0.75
+                        // (đủ khít phần thân rắn, bỏ qua rìa nhọn nhô ra)
+                        const minXZ = Math.min(childSize.x, childSize.z);
+                        const radius = minXZ * 0.75 * 0.5;
+
+                        if (radius > 0.1) { // Bỏ qua mesh quá nhỏ (lá, decoration...)
+                            obstacles.push({
+                                type: 'sphere',
+                                center: new THREE.Vector2(childCenter.x, childCenter.z),
+                                radius: radius
+                            });
+                        }
                     });
                 }
             }
