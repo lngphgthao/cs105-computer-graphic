@@ -55,19 +55,21 @@ export function moveCamera(camera, delta) {
 export function updateCameraFollow(camera, player) {
 	if (!player) return;
 
-	// Keep camera centered on X axis (0) so player movement is visible
+	// Camera bám theo nhân vật trên cả trục X và Z
+	// Offset: Cao hơn nhân vật 6 đơn vị (Y) và cách về phía sau 10 đơn vị (Z)
 	const target = new THREE.Vector3(
-		0,
-		player.position.y + 4,
-		player.position.z + 9,
+		player.position.x,
+		player.position.y + 5,
+		player.position.z + 12,
 	);
 
-	camera.position.lerp(target, 0.2);
+	// Nội suy mượt mà camera tới vị trí mục tiêu
+	camera.position.lerp(target, 0.08);
 
-	// Look slightly ahead on the center path
+	// Camera nhìn trực tiếp vào nhân vật (khoảng ngang thân thỏ)
 	const lookTarget = new THREE.Vector3(
-		0,
-		player.position.y + 2,
+		player.position.x,
+		player.position.y + 0.5,
 		player.position.z,
 	);
 	camera.lookAt(lookTarget);
