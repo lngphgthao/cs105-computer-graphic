@@ -11,11 +11,10 @@ let timeAccumulator = 0;
 // HÀM CHÍNH: Gọi mỗi frame từ main.js
 // ============================================================
 export function updateSpawning(scene, playerZ, coins, obstacles, delta) {
-    // Xóa các mảng cũ từ game chạy vô tận (coins, obstacles không dùng nữa)
+    // Xóa các mảng cũ từ game chạy vô tận (chỉ xóa coins, giữ lại obstacles để làm vật cản)
     // Chỉ xóa 1 lần duy nhất thay vì mỗi frame
-    if (!initialized && (coins.length > 0 || obstacles.length > 0)) {
+    if (!initialized && coins.length > 0) {
         coins.splice(0, coins.length);
-        obstacles.splice(0, obstacles.length);
     }
 
     // Nếu game đã kết thúc (thắng hoặc thua), dọn dẹp mesh còn lại và dừng

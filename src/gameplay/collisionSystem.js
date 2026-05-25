@@ -27,4 +27,37 @@ export function checkCollision(player, coins, obstacles, scene) {
         // Cập nhật trạng thái trong gameState (sẽ phát event + chuyển sang item tiếp theo)
         collectCurrentItem();
     }
+
+    // Xử lý va chạm với các vật cản (đá) — dùng sphere collider
+    if (obstacles && obstacles.length > 0) {
+        const playerRadius = 0.35;
+        for (let i = 0; i < obstacles.length; i++) {
+            const obs = obstacles[i];
+
+            if (obs.type === 'sphere' && obs.center) {
+                // Kiểm tra khoảng cách 2D (XZ) giữa player và tâm đá
+                const dx = player.position.x - obs.center.x;
+                const dz = player.position.z - obs.center.y; // Vector2: y = z
+                const distSq = dx * dx + dz * dz;
+                const minDist = obs.radius + playerRadius;
+
+                if (distSq < minDist * minDist) {
+                    // Va chạm! Đẩy nhân vật ra khỏi đá theo hướng ngược lại
+                    const dist = Math.sqrt(distSq);
+                    if (dist > 0.001) {
+                        // Đẩy ra ngoài vừa đủ để thoát khỏi vùng va chạm
+                        const pushX = (dx / dist) * (minDist - dist);
+                        const pushZ = (dz / dist) * (minDist - dist);
+                        player.position.x += pushX;
+                        player.position.z += pushZ;
+                    } else {
+                        // Trùng vị trí → fallback về vị trí cũ
+                        if (player.userData.prevPosition) {
+                            player.position.copy(player.userData.prevPosition);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

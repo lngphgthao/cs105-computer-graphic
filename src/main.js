@@ -122,7 +122,7 @@ window.natureExplorer = {
 };
 
 // 2. Chèn dòng này vào để tự động xây dựng toàn bộ khu rừng!
-buildEnvironment(scene, modelLoader);
+buildEnvironment(scene, modelLoader, obstacles);
 
 // ------- Simple UI controls for lighting and audio -------
 function createControlsPanel() {
