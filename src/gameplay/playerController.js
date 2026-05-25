@@ -10,6 +10,11 @@ let playerMixer = null;
 let playerActions = {};
 let activeAction = null;
 
+// Pre-allocate vector — tránh tạo mới mỗi frame gây lag do GC
+const _moveDir = new THREE.Vector3();
+const _camForward = new THREE.Vector3();
+const _camRight = new THREE.Vector3();
+
 // Hàm chuyển đổi animation mượt mà (cross-fade)
 function fadeToAnimation(clipName) {
   const targetAction = playerActions[clipName];
@@ -22,8 +27,8 @@ function fadeToAnimation(clipName) {
   activeAction = targetAction;
 }
 
-// Truyền thêm modelLoader vào hàm init
-export function initPlayer(scene, modelLoader) {
+// Truyền thêm modelLoader và listener vào hàm init
+export function initPlayer(scene, modelLoader, listener) {
   player = new THREE.Group();
   
   // Đặt vị trí xuất phát ở trung tâm bản đồ (Y = 0)
@@ -60,6 +65,26 @@ export function initPlayer(scene, modelLoader) {
               activeAction = playerMixer.clipAction(clips[0]);
               activeAction.play();
           }
+
+          // --- THIẾT LẬP ÂM THANH BƯỚC CHÂN ---
+          if (listener) {
+            try {
+              const footstepSound = new THREE.PositionalAudio(listener);
+              const audioLoader = new THREE.AudioLoader();
+              audioLoader.load('/assets/audio/footstep.mp3', (buffer) => {
+                footstepSound.setBuffer(buffer);
+                footstepSound.setLoop(true);
+                footstepSound.setVolume(player.userData._desiredFootstepVol ?? 0.7);
+                footstepSound.setRefDistance(5);
+                player.add(footstepSound);
+                player.userData.footstep = footstepSound;
+              }, undefined, (err) => {
+                console.warn("Không tìm thấy file âm thanh bước chân:", err);
+              });
+            } catch (err) {
+              console.warn("Không thể khởi tạo âm thanh bước chân:", err);
+            }
+          }
       },
       onError: (error) => console.error("🔥 LỖI TẢI THỎ DETECTIVE:", error)
   });
@@ -76,37 +101,54 @@ export function initPlayer(scene, modelLoader) {
   });
 }
 
-export function updatePlayer(delta) {
+export function updatePlayer(delta, camera) {
   if (!player || getGameOver()) return;
 
   // Lưu vị trí cũ đề phòng va chạm hoặc xử lý camera
   player.userData.prevPosition.copy(player.position);
 
-  // --- XỬ LÝ DI CHUYỂN 4 HƯỚNG ---
-  let dx = 0;
-  let dz = 0;
+  // --- XỬ LÝ DI CHUYỂN 4 HƯỚNG THEO CAMERA ---
+  _moveDir.set(0, 0, 0);
 
-  if (keys["w"] || keys["arrowup"]) {
-    dz -= 1; // Đi lên (hướng Bắc / Z âm)
-  }
-  if (keys["s"] || keys["arrowdown"]) {
-    dz += 1; // Đi xuống (hướng Nam / Z dương)
-  }
-  if (keys["a"] || keys["arrowleft"]) {
-    dx -= 1; // Đi sang trái (hướng Tây / X âm)
-  }
-  if (keys["d"] || keys["arrowright"]) {
-    dx += 1; // Đi sang phải (hướng Đông / X dương)
+  if (camera) {
+    // Lấy hướng nhìn của camera
+    camera.getWorldDirection(_camForward);
+    _camForward.y = 0; // Chiếu lên mặt phẳng XZ
+    _camForward.normalize();
+
+    // Tính hướng ngang của camera
+    _camRight.crossVectors(_camForward, camera.up).normalize();
+
+    // W/S đi theo hướng nhìn của camera
+    if (keys["w"] || keys["arrowup"]) {
+      _moveDir.add(_camForward);
+    }
+    if (keys["s"] || keys["arrowdown"]) {
+      _moveDir.sub(_camForward);
+    }
+
+    // A/D đi ngang theo góc camera
+    if (keys["a"] || keys["arrowleft"]) {
+      _moveDir.sub(_camRight);
+    }
+    if (keys["d"] || keys["arrowright"]) {
+      _moveDir.add(_camRight);
+    }
+  } else {
+    // Fallback: Di chuyển theo trục thế giới tuyệt đối nếu không truyền camera
+    if (keys["w"] || keys["arrowup"]) _moveDir.z -= 1;
+    if (keys["s"] || keys["arrowdown"]) _moveDir.z += 1;
+    if (keys["a"] || keys["arrowleft"]) _moveDir.x -= 1;
+    if (keys["d"] || keys["arrowright"]) _moveDir.x += 1;
   }
 
-  const isMoving = dx !== 0 || dz !== 0;
+  const isMoving = _moveDir.lengthSq() > 0;
 
   if (isMoving) {
-    // Chuẩn hóa vector di chuyển để di chuyển chéo không bị nhanh hơn
-    const moveDir = new THREE.Vector3(dx, 0, dz).normalize();
+    _moveDir.normalize();
     
     // Di chuyển nhân vật
-    player.position.addScaledVector(moveDir, speed * delta);
+    player.position.addScaledVector(_moveDir, speed * delta);
 
     // Giới hạn trong bản đồ 100x100 (từ -48 đến 48 để tránh rơi khỏi rìa đất)
     const mapLimit = 48;
@@ -115,7 +157,7 @@ export function updatePlayer(delta) {
 
     // --- XOAY NHÂN VẬT THEO HƯỚNG DI CHUYỂN (MƯỢT MÀ) ---
     // Do thỏ được tải xoay lưng về camera (Math.PI), ta cộng thêm Math.PI vào hướng di chuyển
-    const targetAngle = Math.atan2(dx, dz) + Math.PI;
+    const targetAngle = Math.atan2(_moveDir.x, _moveDir.z) + Math.PI;
     
     let angleDiff = targetAngle - player.rotation.y;
     // Chuẩn hóa góc chênh lệch trong khoảng [-PI, PI] để xoay theo hướng ngắn nhất
@@ -127,11 +169,21 @@ export function updatePlayer(delta) {
     if (runClipName) {
       fadeToAnimation(runClipName);
     }
+
+    // --- PLAY ÂM THANH BƯỚC CHÂN ---
+    if (player.userData.footstep && !player.userData.footstep.isPlaying) {
+      try { player.userData.footstep.play(); } catch (e) { /* ignore */ }
+    }
   } else {
     // --- CHUYỂN SANG HOẠT ẢNH ĐỨNG YÊN ---
     const idleClipName = Object.keys(playerActions).find(name => name.includes('idle'));
     if (idleClipName) {
       fadeToAnimation(idleClipName);
+    }
+
+    // --- DỪNG ÂM THANH BƯỚC CHÂN ---
+    if (player.userData.footstep && player.userData.footstep.isPlaying) {
+      try { player.userData.footstep.pause(); } catch (e) { /* ignore */ }
     }
   }
 

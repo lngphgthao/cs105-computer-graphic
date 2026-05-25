@@ -11,8 +11,8 @@ import {
 	createCamera,
 	moveCamera,
 	updateCameraProjection,
-	updateCameraFollow,
 } from "./core/camera";
+import { updateCameraFollow, initCameraControls } from "./gameplay/cameraSystem";
 import { setupLighting } from "./core/lighting";
 import { setupResizeHandler } from "./core/resize";
 import {
@@ -47,6 +47,9 @@ const camera = createCamera({
 	far: 100,
 	position: { x: 12, y: 10, z: 16 },
 });
+
+// Khởi tạo OrbitControls để cho phép dùng chuột xoay góc nhìn
+initCameraControls(camera, renderer.domElement);
 // Audio listener for music / positional sounds
 const listener = new THREE.AudioListener();
 camera.add(listener);
@@ -195,7 +198,7 @@ function createControlsPanel() {
 		const v = parseFloat(e.target.value);
 		try {
 			backgroundMusic.setVolume(v);
-		} catch (err) {}
+		} catch (err) { }
 	});
 
 	stepVolRow.input.addEventListener("input", (e) => {
@@ -204,7 +207,7 @@ function createControlsPanel() {
 		if (player && player.userData && player.userData.footstep) {
 			try {
 				player.userData.footstep.setVolume(v);
-			} catch (err) {}
+			} catch (err) { }
 		} else {
 			// store desired default for later when footstep exists
 			player && (player.userData._desiredFootstepVol = v);
@@ -293,7 +296,7 @@ function handleCameraKeyboard(event) {
 
 window.addEventListener("keydown", (event) => {
 	const handledByCamera = handleCameraKeyboard(event);
-	const handledByTransform = transformController.handleKeyboard(event);
+	const handledByTransform = typeof transformController !== "undefined" ? transformController.handleKeyboard(event) : false;
 
 	if (handledByCamera || handledByTransform) {
 		updateHudInfo();
@@ -314,12 +317,12 @@ function animate(now) {
 		updateHudInfo();
 	}
 
-	updatePlayer(deltaSeconds);
+	updatePlayer(deltaSeconds, camera);
 	const player = getPlayer();
 
 	updateSpawning(scene, player.position.z, coins, obstacles, deltaSeconds);
 	checkCollision(player, coins, obstacles, scene);
-	updateCameraFollow(camera, player);
+	updateCameraFollow(camera, player, deltaSeconds);
 
 	renderer.render(scene, camera);
 	requestAnimationFrame(animate);
