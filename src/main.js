@@ -3,9 +3,7 @@ import { initPlayer, updatePlayer } from "./gameplay/playerController";
 import { getPlayer } from "./gameplay/playerController";
 import { updateSpawning } from "./gameplay/spawnSystem";
 import { checkCollision } from "./gameplay/collisionSystem";
-import { updateCameraFollow } from "./gameplay/cameraSystem";
 import { addScore, getScore, getGameOver } from "./gameplay/gameState";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { createScene } from "./core/scene";
 import { buildEnvironment } from "./environment/environmentBuilder";
 import { createRenderer } from "./core/renderer";
@@ -13,12 +11,13 @@ import {
 	createCamera,
 	moveCamera,
 	updateCameraProjection,
+	updateCameraFollow,
 } from "./core/camera";
 import { setupLighting } from "./core/lighting";
 import { setupResizeHandler } from "./core/resize";
 import {
 	createGround,
-	createDemoObjects,
+	// createSkyDome,
 	setObjectRenderMode,
 } from "./environment/geometries";
 import { createTransformController } from "./gameplay/transformController";
@@ -48,50 +47,174 @@ const camera = createCamera({
 	far: 100,
 	position: { x: 12, y: 10, z: 16 },
 });
+// Audio listener for music / positional sounds
+const listener = new THREE.AudioListener();
+camera.add(listener);
 
-setupLighting(scene);
+// Background music (non-positional)
+const audioLoader = new THREE.AudioLoader();
+const backgroundMusic = new THREE.Audio(listener);
+audioLoader.load(
+	"/assets/audio/ocean-bloom-jungle.mp3",
+	(buffer) => {
+		backgroundMusic.setBuffer(buffer);
+		backgroundMusic.setLoop(true);
+		backgroundMusic.setVolume(0.2);
+		try {
+			backgroundMusic.play();
+		} catch (e) {
+			/* autoplay may be blocked */
+		}
+	},
+	undefined,
+	(err) =>
+		console.warn(
+			"No background music found at /assets/audio/background_music.mp3",
+			err,
+		),
+);
 
-// const controls = new OrbitControls(camera, renderer.domElement);
-// controls.enableDamping = true;
-// controls.target.set(0, 2, 0);
+let musicEnabled = true;
+window.addEventListener("keydown", (e) => {
+	if (e.code === "KeyB") {
+		musicEnabled = !musicEnabled;
+		if (musicEnabled) {
+			if (backgroundMusic.buffer && !backgroundMusic.isPlaying)
+				backgroundMusic.play();
+		} else {
+			if (backgroundMusic.isPlaying) backgroundMusic.pause();
+		}
+	}
+});
+// Setup lighting and keep references so we can adjust them at runtime
+const { ambientLight, sunlight } = setupLighting(scene);
 
 // Khởi tạo mặt đất
 const terrain = createGround();
 scene.add(terrain);
 
-const demoObjects = createDemoObjects();
-for (const object of demoObjects) {
-	scene.add(object);
-}
+// const skyDome = createSkyDome();
+// scene.add(skyDome);
 
 const coins = [];
 const obstacles = [];
 
-
-const transformController = createTransformController(demoObjects);
-
-function applyRenderMode(mode) {
-	for (const object of demoObjects) {
-		setObjectRenderMode(object, mode);
-	}
-}
+// function applyRenderMode(mode) {
+// 	for (const object of demoObjects) {
+// 		setObjectRenderMode(object, mode);
+// 	}
+// }
 
 // const renderModeController = createRenderModeController(applyRenderMode);
 
 // 1. KHỞI TẠO MODEL LOADER (CHỈ 1 LẦN DUY NHẤT Ở ĐÂY)
 const modelLoader = createModelLoader(scene);
 
-// 2. TRUYỀN VÀO PLAYER CONTROLLER ĐỂ TẢI THỎ
-initPlayer(scene, modelLoader);
+// 2. TRUYỀN VÀO PLAYER CONTROLLER ĐỂ TẢI THỎ (đưa listener để thêm âm thanh bước chân)
+initPlayer(scene, modelLoader, listener);
 
 // Expose ra window để debug (nếu cần)
 window.natureExplorer = {
-    loadModel: modelLoader.loadModel,
+	loadModel: modelLoader.loadModel,
 };
 
 // 2. Chèn dòng này vào để tự động xây dựng toàn bộ khu rừng!
 buildEnvironment(scene, modelLoader);
 
+// ------- Simple UI controls for lighting and audio -------
+function createControlsPanel() {
+	const panel = document.createElement("div");
+	panel.style.position = "absolute";
+	panel.style.right = "12px";
+	panel.style.top = "12px";
+	panel.style.background = "rgba(0,0,0,0.45)";
+	panel.style.color = "#fff";
+	panel.style.padding = "8px";
+	panel.style.borderRadius = "6px";
+	panel.style.fontFamily = "sans-serif";
+	panel.style.fontSize = "13px";
+	panel.style.zIndex = "9999";
+
+	function makeRow(labelText, min, max, step, initial) {
+		const row = document.createElement("div");
+		row.style.marginBottom = "6px";
+
+		const label = document.createElement("div");
+		label.textContent = labelText;
+		label.style.marginBottom = "4px";
+
+		const input = document.createElement("input");
+		input.type = "range";
+		input.min = String(min);
+		input.max = String(max);
+		input.step = String(step);
+		input.value = String(initial);
+		input.style.width = "160px";
+
+		row.appendChild(label);
+		row.appendChild(input);
+		return { row, input };
+	}
+
+	const ambientRow = makeRow(
+		"Ambient Light",
+		0,
+		2,
+		0.01,
+		ambientLight?.intensity ?? 0.35,
+	);
+	const sunRow = makeRow("Sun Light", 0, 3, 0.01, sunlight?.intensity ?? 1.25);
+	const bgVolRow = makeRow(
+		"Music Volume",
+		0,
+		1,
+		0.01,
+		backgroundMusic?.getVolume ? backgroundMusic.getVolume() : 0.2,
+	);
+	const stepVolRow = makeRow("Footstep Vol", 0, 1, 0.01, 0.7);
+
+	panel.appendChild(ambientRow.row);
+	panel.appendChild(sunRow.row);
+	panel.appendChild(bgVolRow.row);
+	panel.appendChild(stepVolRow.row);
+
+	app.appendChild(panel);
+
+	// Wire up events
+	ambientRow.input.addEventListener("input", (e) => {
+		const v = parseFloat(e.target.value);
+		if (ambientLight) ambientLight.intensity = v;
+	});
+
+	sunRow.input.addEventListener("input", (e) => {
+		const v = parseFloat(e.target.value);
+		if (sunlight) sunlight.intensity = v;
+	});
+
+	bgVolRow.input.addEventListener("input", (e) => {
+		const v = parseFloat(e.target.value);
+		try {
+			backgroundMusic.setVolume(v);
+		} catch (err) {}
+	});
+
+	stepVolRow.input.addEventListener("input", (e) => {
+		const v = parseFloat(e.target.value);
+		const player = getPlayer();
+		if (player && player.userData && player.userData.footstep) {
+			try {
+				player.userData.footstep.setVolume(v);
+			} catch (err) {}
+		} else {
+			// store desired default for later when footstep exists
+			player && (player.userData._desiredFootstepVol = v);
+		}
+	});
+
+	return { panel, controls: { ambientRow, sunRow, bgVolRow, stepVolRow } };
+}
+
+const ui = createControlsPanel();
 
 function updateHudInfo() {
 	// const selectedName = transformController.getSelectedName();
@@ -183,32 +306,23 @@ updateHudInfo();
 let previousTime = performance.now();
 
 function animate(now) {
-    const deltaSeconds = (now - previousTime) / 1000;
-    previousTime = now;
+	const deltaSeconds = (now - previousTime) / 1000;
+	previousTime = now;
 
-    if (!getGameOver()) {
-        addScore(deltaSeconds * 5); 
-        updateHudInfo();
-    }
+	if (!getGameOver()) {
+		addScore(deltaSeconds * 5);
+		updateHudInfo();
+	}
 
-    // Hàm này giờ đây đã bao gồm cả di chuyển và cập nhật animation thỏ
-    updatePlayer(deltaSeconds); 
-    const player = getPlayer();
+	updatePlayer(deltaSeconds);
+	const player = getPlayer();
 
-    updateSpawning(scene, player.position.z, coins, obstacles, deltaSeconds);
-    checkCollision(player, coins, obstacles, scene);
-    
-    // Bật lại tính năng camera bám đuôi thỏ!
-    updateCameraFollow(camera, player);
+	updateSpawning(scene, player.position.z, coins, obstacles, deltaSeconds);
+	checkCollision(player, coins, obstacles, scene);
+	updateCameraFollow(camera, player);
 
-    for (const object of demoObjects) {
-        if (object.userData.spinSpeed) {
-            object.rotation.y += object.userData.spinSpeed * deltaSeconds;
-        }
-    }
-
-    renderer.render(scene, camera);
-    requestAnimationFrame(animate);
+	renderer.render(scene, camera);
+	requestAnimationFrame(animate);
 }
 
 requestAnimationFrame(animate);
