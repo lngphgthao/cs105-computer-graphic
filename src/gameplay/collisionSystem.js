@@ -1,51 +1,28 @@
-import { getGameOver, setGameOver } from "./gameState";
+import { getGameOver, getCurrentItem, collectCurrentItem } from "./gameState";
 
-const PLAYER_RADIUS = 0.5;
-const COIN_RADIUS = 0.4;
-const OBSTACLE_RADIUS = 0.5;
-
-let lastHitTime = 0;
-const invincibilityDuration = 1000;
+const COLLECTION_DISTANCE = 2.0; // Khoảng cách nhặt vật phẩm (đơn vị Three.js)
 
 export function checkCollision(player, coins, obstacles, scene) {
-  if (!player || !player.userData.prevPosition || getGameOver()) return;
+    if (!player || getGameOver()) return;
 
-  const prev = player.userData.prevPosition;
-  const now = performance.now();
+    // Chỉ kiểm tra vật phẩm hiện tại (tuần tự, không kiểm tra tất cả)
+    const currentItem = getCurrentItem();
+    if (!currentItem || currentItem.collected) return;
 
-  // coin
-  for (let i = coins.length - 1; i >= 0; i--) {
-    const coin = coins[i];
-    const dist = player.position.distanceTo(coin.position);
+    // Khoảng cách 2D (X, Z) — bỏ qua trục Y vì vật phẩm lơ lửng
+    const dx = player.position.x - currentItem.position.x;
+    const dz = player.position.z - currentItem.position.z;
+    const dist = Math.sqrt(dx * dx + dz * dz);
 
-    if (dist < PLAYER_RADIUS + COIN_RADIUS) {
-      document.dispatchEvent(
-        new CustomEvent("coinCollected", {
-          detail: { value: coin.userData.value || 10 }
-        })
-      );
+    if (dist < COLLECTION_DISTANCE) {
+        console.log(`🎉 THU THẬP THÀNH CÔNG: ${currentItem.name}!`);
 
-      scene.remove(coin);
-      coins.splice(i, 1);
+        // Xóa mesh khỏi scene ngay lập tức (phản hồi trực quan nhanh)
+        if (currentItem.mesh) {
+            scene.remove(currentItem.mesh);
+        }
+
+        // Cập nhật trạng thái trong gameState (sẽ phát event + chuyển sang item tiếp theo)
+        collectCurrentItem();
     }
-  }
-
-  // obstacle
-  for (const obs of obstacles) {
-    const dist = player.position.distanceTo(obs.position);
-
-    if (dist < PLAYER_RADIUS + OBSTACLE_RADIUS + 0.1) {
-      if (now - lastHitTime > invincibilityDuration) {
-        document.dispatchEvent(new CustomEvent("hitObstacle"));
-        lastHitTime = now;
-
-        // Game Over trigger
-        setGameOver(true);
-        document.dispatchEvent(new CustomEvent("gameOver"));
-      }
-
-      player.position.copy(prev);
-      break;
-    }
-  }
 }

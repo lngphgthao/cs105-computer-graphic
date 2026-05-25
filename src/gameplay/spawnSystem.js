@@ -1,98 +1,215 @@
 import * as THREE from "three";
-import { getGameOver } from "./gameState";
+import { TeapotGeometry } from "three/examples/jsm/geometries/TeapotGeometry.js";
+import { getGameOver, getCurrentItem, getCollectedCount, decrementTime } from "./gameState";
 
-const lanes = [-2, 0, 2];
-const SPAWN_DISTANCE = 60; // How far ahead to spawn
-const DESPAWN_DISTANCE = 15; // How far behind to despawn
+let initialized = false;
+let currentItemMesh = null;  // Mesh đang hiển thị trên scene
+let currentSpawnedId = null; // ID của item đang hiển thị
+let timeAccumulator = 0;
 
-let nextSpawnZ = -10;
-let timeAlive = 0;
-
+// ============================================================
+// HÀM CHÍNH: Gọi mỗi frame từ main.js
+// ============================================================
 export function updateSpawning(scene, playerZ, coins, obstacles, delta) {
-  if (getGameOver()) return;
+    // Xóa các mảng cũ từ game chạy vô tận (coins, obstacles không dùng nữa)
+    if (coins.length > 0) coins.splice(0, coins.length);
+    if (obstacles.length > 0) obstacles.splice(0, obstacles.length);
 
-  timeAlive += delta;
-
-  // Difficulty scaling for spawn density: decrease spawn interval or distance between rows
-  // Base distance between rows is 8, decreases slightly over time to a minimum of 4
-  const rowDistance = Math.max(4, 8 - timeAlive * 0.05);
-
-  while (playerZ - SPAWN_DISTANCE < nextSpawnZ) {
-    spawnRow(scene, nextSpawnZ, coins, obstacles);
-    nextSpawnZ -= rowDistance;
-  }
-
-  // Remove old objects and animate coins
-  for (let i = coins.length - 1; i >= 0; i--) {
-    const coin = coins[i];
-    coin.rotation.y += delta * 3; // Coin rotation animation
-
-    if (coin.position.z > playerZ + DESPAWN_DISTANCE) {
-      scene.remove(coin);
-      coins.splice(i, 1);
+    // Nếu game đã kết thúc (thắng hoặc thua), dọn dẹp mesh còn lại và dừng
+    if (getGameOver()) {
+        if (currentItemMesh) {
+            scene.remove(currentItemMesh);
+            currentItemMesh = null;
+            currentSpawnedId = null;
+        }
+        return;
     }
-  }
 
-  for (let i = obstacles.length - 1; i >= 0; i--) {
-    const obs = obstacles[i];
-    if (obs.position.z > playerZ + DESPAWN_DISTANCE) {
-      scene.remove(obs);
-      obstacles.splice(i, 1);
+    // Đếm ngược thời gian
+    decrementTime(delta);
+
+    // Lần gọi đầu tiên: phát gợi ý cho vật phẩm #1 và event bắt đầu game
+    if (!initialized) {
+        initialized = true;
+        const firstItem = getCurrentItem();
+        if (firstItem) {
+            document.dispatchEvent(new CustomEvent("hintReceived", {
+                detail: {
+                    hint: firstItem.hint,
+                    itemName: firstItem.name,
+                    itemNumber: 1
+                }
+            }));
+            document.dispatchEvent(new CustomEvent("gameStarted", {
+                detail: { firstHint: firstItem.hint }
+            }));
+        }
     }
-  }
+
+    // Kiểm tra xem cần spawn item nào
+    const currentItem = getCurrentItem();
+
+    if (currentItem && !currentItem.collected && currentSpawnedId !== currentItem.id) {
+        // Xóa mesh vật phẩm cũ (nếu đang hiển thị vật phẩm trước đó)
+        if (currentItemMesh) {
+            scene.remove(currentItemMesh);
+            currentItemMesh = null;
+        }
+
+        // Tạo và hiển thị vật phẩm mới
+        currentItemMesh = createItemMesh(currentItem);
+        currentItem.mesh = currentItemMesh;
+        scene.add(currentItemMesh);
+        currentSpawnedId = currentItem.id;
+
+        console.log(`🌟 VẬT PHẨM #${getCollectedCount() + 1} XUẤT HIỆN: ${currentItem.name} tại (${currentItem.position.x}, ${currentItem.position.z})`);
+    }
+
+    // Animate vật phẩm hiện tại (xoay, lơ lửng)
+    timeAccumulator += delta;
+    if (currentItemMesh) {
+        animateItem(currentItemMesh, delta);
+    }
 }
 
-function spawnRow(scene, z, coins, obstacles) {
-  const availableLanes = [...lanes];
+// ============================================================
+// TẠO MESH CHO TỪNG LOẠI VẬT PHẨM
+// ============================================================
+function createItemMesh(item) {
+    const itemGroup = new THREE.Group();
+    itemGroup.position.set(item.position.x, item.position.y, item.position.z);
+    itemGroup.name = item.id;
+    itemGroup.userData = {
+        itemId: item.id,
+        baseY: item.position.y,
+        spinSpeed: 1.5
+    };
 
-  // As time goes on, obstacle probability increases
-  const obsProb = Math.min(0.7, 0.4 + timeAlive * 0.005);
+    let coreMesh;
+    let color;
 
-  if (Math.random() < obsProb) {
-    const laneIndex = Math.floor(Math.random() * availableLanes.length);
-    const obsX = availableLanes.splice(laneIndex, 1)[0];
-    const obs = spawnSingleObstacle(scene, obsX, z);
-    obstacles.push(obs);
-
-    // Sometimes spawn 2 obstacles in a row at higher difficulties
-    if (timeAlive > 30 && Math.random() < 0.3) {
-      const laneIndex2 = Math.floor(Math.random() * availableLanes.length);
-      const obsX2 = availableLanes.splice(laneIndex2, 1)[0];
-      const obs2 = spawnSingleObstacle(scene, obsX2, z);
-      obstacles.push(obs2);
+    switch (item.id) {
+        case "item1": { // Nấm Pha Lê - Hồng
+            color = 0xff69b4;
+            const stem = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.15, 0.25, 0.8, 12),
+                new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 })
+            );
+            stem.position.y = -0.2;
+            const cap = new THREE.Mesh(
+                new THREE.ConeGeometry(0.6, 0.5, 12),
+                new THREE.MeshStandardMaterial({
+                    color, emissive: color, emissiveIntensity: 1.0, roughness: 0.2
+                })
+            );
+            cap.position.y = 0.3;
+            coreMesh = new THREE.Group();
+            coreMesh.add(stem, cap);
+            break;
+        }
+        case "item2": { // Ấm Trà Vàng
+            color = 0xffd700;
+            coreMesh = new THREE.Mesh(
+                new TeapotGeometry(0.5, 6),
+                new THREE.MeshStandardMaterial({
+                    color, metalness: 0.9, roughness: 0.1,
+                    emissive: 0x443300, emissiveIntensity: 0.5
+                })
+            );
+            break;
+        }
+        case "item3": { // Bánh Xe Cổ - Xanh ngọc
+            color = 0x00ffff;
+            coreMesh = new THREE.Mesh(
+                new THREE.TorusGeometry(0.45, 0.15, 12, 36),
+                new THREE.MeshStandardMaterial({
+                    color: 0xddffff, metalness: 1.0, roughness: 0.1,
+                    emissive: 0x005555, emissiveIntensity: 0.8
+                })
+            );
+            coreMesh.rotation.x = Math.PI / 2;
+            break;
+        }
+        case "item4": { // Hộp Kho Báu - Xanh lục bảo
+            color = 0x32cd32;
+            coreMesh = new THREE.Mesh(
+                new THREE.BoxGeometry(0.7, 0.7, 0.7),
+                new THREE.MeshStandardMaterial({
+                    color, emissive: color, emissiveIntensity: 0.8,
+                    roughness: 0.3, metalness: 0.5
+                })
+            );
+            break;
+        }
+        case "item5":
+        default: { // Viên Ngọc Rừng - Xanh dương
+            color = 0x00bfff;
+            coreMesh = new THREE.Mesh(
+                new THREE.SphereGeometry(0.45, 24, 24),
+                new THREE.MeshStandardMaterial({
+                    color, transparent: true, opacity: 0.85,
+                    emissive: color, emissiveIntensity: 1.2,
+                    roughness: 0.05, metalness: 0.9
+                })
+            );
+            break;
+        }
     }
-  }
 
-  // Spawn coins in remaining empty lanes
-  if (Math.random() < 0.5) {
-    availableLanes.forEach(laneX => {
-      if (Math.random() < 0.6) {
-        const coin = spawnSingleCoin(scene, laneX, z);
-        coins.push(coin);
-      }
-    });
-  }
+    coreMesh.name = "core";
+    coreMesh.castShadow = true;
+    itemGroup.add(coreMesh);
+
+    // Ánh sáng PointLight (KHÔNG bật castShadow để giữ hiệu năng)
+    const light = new THREE.PointLight(color, 2.0, 8);
+    light.position.set(0, 0.5, 0);
+    itemGroup.add(light);
+
+    // Vòng tròn hiệu ứng dưới đất
+    const ring = new THREE.Mesh(
+        new THREE.RingGeometry(0.6, 0.75, 24),
+        new THREE.MeshBasicMaterial({
+            color, side: THREE.DoubleSide,
+            transparent: true, opacity: 0.4
+        })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = -item.position.y + 0.02;
+    ring.name = "ring";
+    itemGroup.add(ring);
+
+    return itemGroup;
 }
 
-function spawnSingleCoin(scene, x, z) {
-  const coin = new THREE.Mesh(
-    new THREE.SphereGeometry(0.4),
-    new THREE.MeshStandardMaterial({ color: 0xffff00 })
-  );
-  coin.position.set(x, 0.5, z);
-  coin.userData.type = "coin";
-  coin.userData.value = 10;
-  scene.add(coin);
-  return coin;
+// ============================================================
+// HIỆU ỨNG ĐỘNG: Xoay, lơ lửng, vòng tròn co giãn
+// ============================================================
+function animateItem(group, delta) {
+    const core = group.getObjectByName("core");
+    if (core) {
+        core.rotation.y += group.userData.spinSpeed * delta;
+    }
+
+    // Bay lên xuống theo hàm sin
+    const newY = group.userData.baseY + Math.sin(timeAccumulator * 2.0) * 0.2;
+    group.position.y = newY;
+
+    // Vòng tròn co giãn
+    const ring = group.getObjectByName("ring");
+    if (ring) {
+        const s = 1.0 + Math.sin(timeAccumulator * 3.0) * 0.12;
+        ring.scale.set(s, s, 1.0);
+        ring.material.opacity = 0.3 + Math.sin(timeAccumulator * 3.0) * 0.15;
+    }
 }
 
-function spawnSingleObstacle(scene, x, z) {
-  const obs = new THREE.Mesh(
-    new THREE.BoxGeometry(1, 1, 1),
-    new THREE.MeshStandardMaterial({ color: 0xff0000 })
-  );
-  obs.position.set(x, 0.5, z);
-  obs.userData.type = "obstacle";
-  scene.add(obs);
-  return obs;
+// Hàm dọn dẹp khi reset game
+export function resetSpawnedItems(scene) {
+    if (currentItemMesh) {
+        scene.remove(currentItemMesh);
+        currentItemMesh = null;
+    }
+    currentSpawnedId = null;
+    initialized = false;
+    timeAccumulator = 0;
 }
