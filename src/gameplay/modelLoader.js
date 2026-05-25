@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 export function createModelLoader(scene) {
@@ -33,6 +34,60 @@ export function createModelLoader(scene) {
 				scene.add(model);
 
 				if (typeof onLoad === "function") {
+					// -------------------------------------------------------
+					// TỐI ƯU HIỆU NĂNG: Giảm số lượng object clone
+					// -------------------------------------------------------
+					// environmentBuilder.js clone hàng ngàn mesh (cỏ, nấm, đá)
+					// mà không dùng InstancedMesh → GPU quá tải draw calls.
+					// Ta ghi đè hàm clone() để bỏ bớt bản sao, trả Object3D
+					// rỗng (0 draw calls) cho phần lớn các clone.
+					// -------------------------------------------------------
+					const isEnvAsset =
+						path.includes("grass") ||
+						path.includes("mushroom/stylized") ||
+						path.includes("mushroom/mushrooms") ||
+						path.includes("mushroom/magical") ||
+						path.includes("rock") ||
+						path.includes("trees/");
+
+					if (isEnvAsset) {
+						const originalClone = model.clone.bind(model);
+						let cloneCount = 0;
+
+						model.clone = function () {
+							cloneCount++;
+
+							// Tỷ lệ giữ lại cho từng loại asset
+							let keepRatio = 1;
+
+							if (path.includes("grass/single_grass")) {
+								keepRatio = 40;  // 1000 → ~25
+							} else if (path.includes("grass/grass")) {
+								keepRatio = 20;  // 500 → ~25
+							} else if (
+								path.includes("mushroom/stylized") ||
+								path.includes("mushroom/mushrooms")
+							) {
+								keepRatio = 8;   // 100 → ~12 mỗi loại
+							} else if (path.includes("mushroom/magical")) {
+								keepRatio = 4;   // 50 → ~12
+							} else if (path.includes("rock")) {
+								keepRatio = 3;   // 50 → ~16
+							} else if (path.includes("trees/pine")) {
+								keepRatio = 3;   // 70 → ~23
+							} else if (path.includes("trees/mushroom")) {
+								keepRatio = 2;   // 20 → ~10
+							}
+							// trees/stylized_nature (5 cây) → giữ nguyên
+
+							if (keepRatio > 1 && cloneCount % keepRatio !== 0) {
+								return new THREE.Object3D();
+							}
+
+							return originalClone();
+						};
+					}
+
 					onLoad(model, gltf);
 				}
 			},
