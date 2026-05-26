@@ -1,9 +1,11 @@
 import * as THREE from "three";
 
+const GRASS_LIMIT = 50;
+
 export function buildEnvironment(scene, modelLoader, obstacles) {
 	loadTrees(scene, modelLoader);
 	loadMushroomTrees(scene, modelLoader);
-	loadPineTrees(scene, modelLoader);
+	// loadPineTrees(scene, modelLoader);
 	loadMushrooms(scene, modelLoader);
 	loadMushrooms_type1(scene, modelLoader);
 	// loadMushrooms_type2(scene, modelLoader);
@@ -12,6 +14,33 @@ export function buildEnvironment(scene, modelLoader, obstacles) {
 	loadRocks(scene, modelLoader, obstacles);
 	// GỌI HÀM BẦU TRỜI NGAY TẠI ĐÂY
 	// loadSkyDome(scene, modelLoader);
+}
+
+function createGrassSampler(clusterCount, spread) {
+	const clusters = Array.from({ length: clusterCount }, () => ({
+		x: (Math.random() - 0.5) * 82,
+		z: (Math.random() - 0.5) * 82,
+		radius: spread * (0.7 + Math.random() * 0.6),
+	}));
+
+	return () => {
+		const cluster = clusters[Math.floor(Math.random() * clusters.length)];
+		const angle = Math.random() * Math.PI * 2;
+		const distance = Math.sqrt(Math.random()) * cluster.radius;
+
+		return {
+			x: THREE.MathUtils.clamp(
+				cluster.x + Math.cos(angle) * distance,
+				-GRASS_LIMIT,
+				GRASS_LIMIT,
+			),
+			z: THREE.MathUtils.clamp(
+				cluster.z + Math.sin(angle) * distance,
+				-GRASS_LIMIT,
+				GRASS_LIMIT,
+			),
+		};
+	};
 }
 
 // ==========================================
@@ -57,7 +86,7 @@ function loadTrees(scene, modelLoader) {
 
 					if (i === 0) {
 						const helper = new THREE.BoxHelper(treeClone, 0xffff00);
-						scene.add(helper);
+						// scene.add(helper);
 						console.log(
 							`📍 Cây số 1 (viền vàng) đã được ép về chiều cao: ${(targetHeight * variation).toFixed(2)}`,
 						);
@@ -115,7 +144,7 @@ function loadMushroomTrees(scene, modelLoader) {
 
 				if (i === 0) {
 					const helper = new THREE.BoxHelper(treeClone, 0xffff00);
-					scene.add(helper);
+					// scene.add(helper);
 					console.log(
 						`📍 Cây nấm đã được ép về chiều cao: ${(targetHeight * variation).toFixed(2)}`,
 					);
@@ -174,7 +203,7 @@ function loadPineTrees(scene, modelLoader) {
 
 					if (i === 0) {
 						const helper = new THREE.BoxHelper(treeClone, 0xffff00);
-						scene.add(helper);
+						// scene.add(helper);
 						console.log(
 							`📍 Cây nấm đã được ép về chiều cao: ${(targetHeight * variation).toFixed(2)}`,
 						);
@@ -350,7 +379,7 @@ function loadMushrooms_type2(scene, modelLoader) {
 
 					if (i === 0) {
 						const helper = new THREE.BoxHelper(treeClone, 0xffff00);
-						scene.add(helper);
+						// scene.add(helper);
 						console.log(
 							`📍 Cây nấm đã được ép về chiều cao: ${(targetHeight * variation).toFixed(2)}`,
 						);
@@ -385,23 +414,29 @@ function loadGrassType1(scene, modelLoader) {
 			const targetHeight = 1.8;
 			const actualHeight = size.y > 0 ? size.y : 1;
 			const baseScale = targetHeight / actualHeight;
-
-			const grassCount = 500;
+			const grassCount = 520;
+			const pickPlacement = createGrassSampler(18, 11);
 
 			for (let i = 0; i < grassCount; i++) {
 				const grassClone = model.clone();
+				const { x, z } = pickPlacement();
+				if (Math.max(Math.abs(x), Math.abs(z)) < 1.5) continue;
 
-				const randomX = (Math.random() - 0.5) * 120;
-				const randomZ = (Math.random() - 0.5) * 120;
-				if (Math.abs(randomX) < 4) continue;
-
-				grassClone.position.set(randomX, 0, randomZ);
+				grassClone.position.set(x, 0.015, z);
 
 				const variation = 0.7 + Math.random() * 0.6;
 				const finalScale = baseScale * variation;
 
-				grassClone.scale.set(finalScale, finalScale, finalScale);
-				grassClone.rotation.set(0, Math.random() * Math.PI * 2, 0);
+				grassClone.scale.set(
+					finalScale * (0.92 + Math.random() * 0.25),
+					finalScale * (0.92 + Math.random() * 0.18),
+					finalScale * (0.92 + Math.random() * 0.25),
+				);
+				grassClone.rotation.set(
+					(Math.random() - 0.5) * 0.1,
+					Math.random() * Math.PI * 2,
+					(Math.random() - 0.5) * 0.1,
+				);
 
 				grassClone.traverse((child) => {
 					if (child.isMesh) {
@@ -435,23 +470,29 @@ function loadGrassType2(scene, modelLoader) {
 			const targetHeight = 0.8;
 			const actualHeight = size.y > 0 ? size.y : 1;
 			const baseScale = targetHeight / actualHeight;
-
-			const grassCount = 1000;
+			const grassCount = 1100;
+			const pickPlacement = createGrassSampler(24, 13);
 
 			for (let i = 0; i < grassCount; i++) {
 				const grassClone = model.clone();
+				const { x, z } = pickPlacement();
+				if (Math.max(Math.abs(x), Math.abs(z)) < 1.5) continue;
 
-				const randomX = (Math.random() - 0.5) * 120;
-				const randomZ = (Math.random() - 0.5) * 120;
-				if (Math.abs(randomX) < 4) continue;
-
-				grassClone.position.set(randomX, 0, randomZ);
+				grassClone.position.set(x, 0.01, z);
 
 				const variation = 0.7 + Math.random() * 0.6;
 				const finalScale = baseScale * variation;
 
-				grassClone.scale.set(finalScale * 2.0, finalScale, finalScale * 2.0);
-				grassClone.rotation.set(0, Math.random() * Math.PI * 2, 0);
+				grassClone.scale.set(
+					finalScale * 2.0 * (0.9 + Math.random() * 0.22),
+					finalScale * (0.92 + Math.random() * 0.16),
+					finalScale * 2.0 * (0.9 + Math.random() * 0.22),
+				);
+				grassClone.rotation.set(
+					(Math.random() - 0.5) * 0.08,
+					Math.random() * Math.PI * 2,
+					(Math.random() - 0.5) * 0.08,
+				);
 
 				grassClone.traverse((child) => {
 					if (child.isMesh) {
