@@ -19,11 +19,6 @@ export function setupLighting(scene) {
 	sunlight.shadow.camera.bottom = -45;
 	sunlight.shadow.bias = -0.00012;
 
-    // // 2. Sương mù (Fog) để che viền bản đồ và tạo cảm giác huyền bí
-    // // Màu sương mù nên trùng với màu background của scene
-    scene.fog = new THREE.Fog(0x2a1b3d, 10, 70); 
-    // scene.background = new THREE.Color(0x2a1b3d);
-
 	scene.add(sunlight);
 	scene.add(sunlight.target);
 
