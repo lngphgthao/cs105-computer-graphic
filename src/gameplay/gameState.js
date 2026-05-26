@@ -1,6 +1,5 @@
 // ============================================================
 // CẤU HÌNH DANH SÁCH 5 VẬT PHẨM CẦN TÌM (TUẦN TỰ)
-// Vương có thể chỉnh sửa tọa độ và gợi ý trực tiếp ở đây.
 //
 // LUẬT CHƠI:
 // - Vật phẩm xuất hiện TỪNG CÁI MỘT trên bản đồ.
