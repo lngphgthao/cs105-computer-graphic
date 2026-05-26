@@ -31,13 +31,12 @@ function fadeToAnimation(clipName) {
 // Truyền thêm modelLoader và listener vào hàm init
 export function initPlayer(scene, modelLoader, listener) {
 	player = new THREE.Group();
+	scene.add(player);
 
 	// Đặt vị trí xuất phát ở trung tâm bản đồ (Y = 0)
 	player.position.set(0, 0, 0);
 	player.userData.type = "player";
 	player.userData.prevPosition = new THREE.Vector3();
-
-	scene.add(player);
 
 	// --- TẢI MODEL THỎ VÀO TRONG GROUP PLAYER ---
 	modelLoader.loadModel("/assets/models/characters/bunny_detective.glb", {
@@ -98,7 +97,6 @@ export function initPlayer(scene, modelLoader, listener) {
 		},
 		onError: (error) => console.error("🔥 LỖI TẢI THỎ DETECTIVE:", error),
 	});
-
 	// --- LẮNG NGHE BÀN PHÍM ---
 	window.addEventListener("keydown", (e) => {
 		const key = e.key.toLowerCase();
@@ -227,4 +225,33 @@ export function updatePlayer(delta, camera) {
 
 export function getPlayer() {
 	return player;
+}
+
+export function resetPlayer() {
+	if (player) {
+		player.position.set(0, 0, 0);
+		player.rotation.set(0, Math.PI, 0);
+
+		// Clear keyboard input state
+		for (const key in keys) {
+			keys[key] = false;
+		}
+
+		if (playerMixer) {
+			const idleClipName = Object.keys(playerActions).find((name) =>
+				name.includes("idle"),
+			);
+			if (idleClipName) {
+				fadeToAnimation(idleClipName);
+			}
+		}
+
+		if (player.userData.footstep && player.userData.footstep.isPlaying) {
+			try {
+				player.userData.footstep.pause();
+			} catch (e) {
+				/* ignore */
+			}
+		}
+	}
 }

@@ -22,7 +22,7 @@ export function createRenderModeController(onModeChange) {
 
 	function setMode(nextMode) {
 		if (!RENDER_MODES.includes(nextMode)) {
-			return;
+			return;	
 		}
 
 		mode = nextMode;

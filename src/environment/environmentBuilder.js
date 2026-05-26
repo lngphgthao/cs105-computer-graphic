@@ -172,6 +172,40 @@ function createProximityGrassSampler(positions, randomFn, densityRadius = 12, ma
 }
 
 // ==========================================
+// 0. TẢI TIỂU CẢNH INTRO (DIORAMA)
+// ==========================================
+export function buildIntroDiorama(scene, modelLoader) {
+    // Chỉ tải 1-2 cây và vài cục đá để làm background intro
+    modelLoader.loadModel('/assets/models/trees/stylized_nature_pack_vol-1__3d_tree.glb', {
+        position: [5, 0, -5],
+        scale: [1, 1, 1],
+        rotation: [0, Math.random() * Math.PI, 0],
+        onLoad: (model) => {
+            const tree = model.clone();
+            tree.scale.set(1.5, 1.5, 1.5);
+            scene.add(tree);
+        }
+    });
+
+    modelLoader.loadModel('/assets/models/mushroom/stylized_glowing_mushrooms.glb', {
+        position: [-4, 0, 3],
+        scale: [1, 1, 1],
+        rotation: [0, Math.random() * Math.PI, 0],
+        onLoad: (model) => {
+            const mushroom = model.clone();
+            mushroom.scale.set(1.2, 1.2, 1.2);
+            mushroom.traverse((child) => {
+                if (child.isMesh && child.material) {
+                    child.material.emissive = new THREE.Color(0x00ffff);
+                    child.material.emissiveIntensity = 0.8;
+                }
+            });
+            scene.add(mushroom);
+        }
+    });
+}
+
+// ==========================================
 // 1. TẢI CÂY
 // ==========================================
 function loadTrees(scene, modelLoader) {
@@ -812,13 +846,13 @@ function loadRocks(scene, modelLoader, obstacles) {
 	});
 }
 
-function loadSkyDome(scene, modelLoader) {
-	modelLoader.loadModel("/assets/texture/night_sky.glb", {
-		position: [0, 0, 0],
-		scale: [1, 1, 1],
-		rotation: [0, 0, 0],
-		onLoad: (model) => {
-			console.log("🌌 ĐÃ TẢI SKYDOME 3D!");
+export function loadSkyDome(scene, modelLoader) {
+    modelLoader.loadModel('/assets/texture/night_sky.glb', {
+        position: [0, 0, 0],
+        scale: [1, 1, 1],
+        rotation: [0, 0, 0],
+        onLoad: (model) => {
+            console.log("🌌 ĐÃ TẢI SKYDOME 3D!");
 
 			const box = new THREE.Box3().setFromObject(model);
 			const size = new THREE.Vector3();
