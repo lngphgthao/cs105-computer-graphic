@@ -23,6 +23,7 @@ import {
 import { createTransformController } from "./gameplay/transformController";
 import { createModelLoader } from "./gameplay/modelLoader";
 // import { createRenderModeController } from "./ui/renderModeController";
+import { initGameUI } from "./ui/gameUI";
 import "./styles.css";
 
 document.addEventListener("coinCollected", (e) => {
@@ -217,7 +218,24 @@ function createControlsPanel() {
 	return { panel, controls: { ambientRow, sunRow, bgVolRow, stepVolRow } };
 }
 
-const ui = createControlsPanel();
+// const ui = createControlsPanel();
+let isGameActive = false;
+
+initGameUI({
+	scene,
+	backgroundMusic,
+	ambientLight,
+	sunlight,
+	onStartGame: () => {
+		isGameActive = true;
+	},
+	onPauseGame: () => {
+		isGameActive = false;
+	},
+	onResumeGame: () => {
+		isGameActive = true;
+	}
+});
 
 function updateHudInfo() {
 	// const selectedName = transformController.getSelectedName();
@@ -294,6 +312,14 @@ function handleCameraKeyboard(event) {
 	return changed;
 }
 
+// Keydown capture blocker to prevent character movement before game starts
+window.addEventListener("keydown", (e) => {
+	if (!isGameActive) {
+		e.stopPropagation();
+		e.preventDefault();
+	}
+}, true); // Capture phase!
+
 window.addEventListener("keydown", (event) => {
 	const handledByCamera = handleCameraKeyboard(event);
 	const handledByTransform = typeof transformController !== "undefined" ? transformController.handleKeyboard(event) : false;
@@ -312,9 +338,24 @@ function animate(now) {
 	const deltaSeconds = (now - previousTime) / 1000;
 	previousTime = now;
 
-	if (!getGameOver()) {
-		addScore(deltaSeconds * 5);
-		updateHudInfo();
+	if (isGameActive) {
+		if (!getGameOver()) {
+			addScore(deltaSeconds * 5);
+			updateHudInfo();
+		}
+
+		updatePlayer(deltaSeconds);
+		const player = getPlayer();
+
+		updateSpawning(scene, player.position.z, coins, obstacles, deltaSeconds);
+		checkCollision(player, coins, obstacles, scene);
+		updateCameraFollow(camera, player);
+	} else {
+		// Just keep the camera updated to follow the player before game starts
+		const player = getPlayer();
+		if (player) {
+			updateCameraFollow(camera, player);
+		}
 	}
 
 	updatePlayer(deltaSeconds, camera);
@@ -323,7 +364,6 @@ function animate(now) {
 	updateSpawning(scene, player.position.z, coins, obstacles, deltaSeconds);
 	checkCollision(player, coins, obstacles, scene);
 	updateCameraFollow(camera, player, deltaSeconds);
-
 	renderer.render(scene, camera);
 	requestAnimationFrame(animate);
 }
