@@ -175,12 +175,14 @@ function createProximityGrassSampler(positions, randomFn, densityRadius = 12, ma
 // 1. TẢI CÂY
 // ==========================================
 function loadTrees(scene, modelLoader) {
-    modelLoader.loadModel('/assets/models/trees/stylized_nature_pack_vol-1__3d_tree.glb', {
-        position: [0, -100, 0],
-        scale: [1, 1, 1],
-        rotation: [0, 0, 0],
-        onLoad: (model) => {
-            console.log("✅ ĐÃ TẢI FILE GLB! Bắt đầu ép size...");
+	modelLoader.loadModel(
+		"/assets/models/trees/stylized_nature_pack_vol-1__3d_tree.glb",
+		{
+			position: [0, -100, 0],
+			scale: [1, 1, 1],
+			rotation: [0, 0, 0],
+			onLoad: (model) => {
+				console.log("✅ ĐÃ TẢI FILE GLB! Bắt đầu ép size...");
 
 				// ⭐ LOCAL PRNG INSTANCE: Create isolated random generator for this loader
 				const random = createRandomGenerator(SEEDS.trees);
@@ -190,20 +192,20 @@ function loadTrees(scene, modelLoader) {
 				box.getSize(size);
 				console.log(`📏 Chiều cao thật của cây gốc: ${size.y.toFixed(2)}`);
 
-            const targetHeight = 18.0;
-            const actualHeight = size.y > 0 ? size.y : 1;
-            const baseScale = targetHeight / actualHeight;
+				const targetHeight = 18.0;
+				const actualHeight = size.y > 0 ? size.y : 1;
+				const baseScale = targetHeight / actualHeight;
 
 				const treeCount = 8;
 
-            for (let i = 0; i < treeCount; i++) {
-                const treeClone = model.clone();
+				for (let i = 0; i < treeCount; i++) {
+					const treeClone = model.clone();
 
 					const randomX = (random() - 0.5) * MAP_LIMIT;
 					const randomZ = (random() - 0.5) * MAP_LIMIT;
 					if (Math.abs(randomX) < 4) continue;
 
-                treeClone.position.set(randomX, 0, randomZ);
+					treeClone.position.set(randomX, 0, randomZ);
 
 					// Track this tree's position for proximity grass spawning
 					spawnedPositions.trees.push({
@@ -217,32 +219,37 @@ function loadTrees(scene, modelLoader) {
 					treeClone.scale.set(finalScale, finalScale, finalScale);
 					treeClone.rotation.set(0, random() * Math.PI * 2, 0);
 
-                scene.add(treeClone);
+					scene.add(treeClone);
 
-                if (i === 0) {
-                    const helper = new THREE.BoxHelper(treeClone, 0xffff00);
-                    scene.add(helper);
-                    console.log(`📍 Cây số 1 (viền vàng) đã được ép về chiều cao: ${(targetHeight * variation).toFixed(2)}`);
-                }
-            }
-        },
-        onError: (error) => {
-            console.error("🔥 LỖI MẠNG: Không tìm thấy file GLB. Hãy check lại đường dẫn!", error);
-        }
-    });
+					if (i === 0) {
+						const helper = new THREE.BoxHelper(treeClone, 0xffff00);
+						// scene.add(helper);
+						console.log(
+							`📍 Cây số 1 (viền vàng) đã được ép về chiều cao: ${(targetHeight * variation).toFixed(2)}`,
+						);
+					}
+				}
+			},
+			onError: (error) => {
+				console.error(
+					"🔥 LỖI MẠNG: Không tìm thấy file GLB. Hãy check lại đường dẫn!",
+					error,
+				);
+			},
+		},
+	);
 }
-
 
 // ==========================================
 // 1.1 TẢI CÂY NẤM
 // ==========================================
 function loadMushroomTrees(scene, modelLoader) {
-    modelLoader.loadModel('/assets/models/trees/mushroom__tree.glb', {
-        position: [0, -100, 0],
-        scale: [1, 1, 1],
-        rotation: [0, 0, 0],
-        onLoad: (model) => {
-            console.log("✅ ĐÃ TẢI FILE GLB! Bắt đầu ép size...");
+	modelLoader.loadModel("/assets/models/trees/mushroom__tree.glb", {
+		position: [0, -100, 0],
+		scale: [1, 1, 1],
+		rotation: [0, 0, 0],
+		onLoad: (model) => {
+			console.log("✅ ĐÃ TẢI FILE GLB! Bắt đầu ép size...");
 
 			// ⭐ LOCAL PRNG INSTANCE: Create isolated random generator for this loader
 			const random = createRandomGenerator(SEEDS.mushroomTrees);
@@ -252,20 +259,20 @@ function loadMushroomTrees(scene, modelLoader) {
 			box.getSize(size);
 			console.log(`📏 Chiều cao thật của cây gốc: ${size.y.toFixed(2)}`);
 
-            const targetHeight = 10.0;
-            const actualHeight = size.y > 0 ? size.y : 1;
-            const baseScale = targetHeight / actualHeight;
+			const targetHeight = 10.0;
+			const actualHeight = size.y > 0 ? size.y : 1;
+			const baseScale = targetHeight / actualHeight;
 
-            const treeCount = 20;
+			const treeCount = 20;
 
-            for (let i = 0; i < treeCount; i++) {
-                const treeClone = model.clone();
+			for (let i = 0; i < treeCount; i++) {
+				const treeClone = model.clone();
 
 				const randomX = (random() - 0.5) * MAP_LIMIT;
 				const randomZ = (random() - 0.5) * MAP_LIMIT;
 				if (Math.abs(randomX) < 4) continue;
 
-                treeClone.position.set(randomX, 0, randomZ);
+				treeClone.position.set(randomX, 0, randomZ);
 
 				// Track this mushroom tree's position for proximity grass spawning
 				spawnedPositions.mushroom_trees.push({
@@ -279,32 +286,38 @@ function loadMushroomTrees(scene, modelLoader) {
 				treeClone.scale.set(finalScale, finalScale, finalScale);
 				treeClone.rotation.set(0, random() * Math.PI * 2, 0);
 
-                scene.add(treeClone);
+				scene.add(treeClone);
 
-                if (i === 0) {
-                    const helper = new THREE.BoxHelper(treeClone, 0xffff00);
-                    scene.add(helper);
-                    console.log(`📍 Cây nấm đã được ép về chiều cao: ${(targetHeight * variation).toFixed(2)}`);
-                }
-            }
-        },
-        onError: (error) => {
-            console.error("🔥 LỖI MẠNG: Không tìm thấy file GLB. Hãy check lại đường dẫn!", error);
-        }
-    });
+				if (i === 0) {
+					const helper = new THREE.BoxHelper(treeClone, 0xffff00);
+					// scene.add(helper);
+					console.log(
+						`📍 Cây nấm đã được ép về chiều cao: ${(targetHeight * variation).toFixed(2)}`,
+					);
+				}
+			}
+		},
+		onError: (error) => {
+			console.error(
+				"🔥 LỖI MẠNG: Không tìm thấy file GLB. Hãy check lại đường dẫn!",
+				error,
+			);
+		},
+	});
 }
-
 
 // ==========================================
 // 1.2 TẢI CÂY THÔNG
 // ==========================================
 function loadPineTrees(scene, modelLoader) {
-    modelLoader.loadModel('/assets/models/trees/pine_tree__low_poly_stylized_tree.glb', {
-        position: [0, -100, 0],
-        scale: [1, 1, 1],
-        rotation: [0, 0, 0],
-        onLoad: (model) => {
-            console.log("✅ ĐÃ TẢI FILE GLB! Bắt đầu ép size...");
+	modelLoader.loadModel(
+		"/assets/models/trees/pine_tree__low_poly_stylized_tree.glb",
+		{
+			position: [0, -100, 0],
+			scale: [1, 1, 1],
+			rotation: [0, 0, 0],
+			onLoad: (model) => {
+				console.log("✅ ĐÃ TẢI FILE GLB! Bắt đầu ép size...");
 
 				// ⭐ LOCAL PRNG INSTANCE: Create isolated random generator for this loader
 				const random = createRandomGenerator(SEEDS.pineTrees);
@@ -314,20 +327,20 @@ function loadPineTrees(scene, modelLoader) {
 				box.getSize(size);
 				console.log(`📏 Chiều cao thật của cây gốc: ${size.y.toFixed(2)}`);
 
-            const targetHeight = 15.0;
-            const actualHeight = size.y > 0 ? size.y : 1;
-            const baseScale = targetHeight / actualHeight;
+				const targetHeight = 15.0;
+				const actualHeight = size.y > 0 ? size.y : 1;
+				const baseScale = targetHeight / actualHeight;
 
 				const treeCount = 15;
 
-            for (let i = 0; i < treeCount; i++) {
-                const treeClone = model.clone();
+				for (let i = 0; i < treeCount; i++) {
+					const treeClone = model.clone();
 
 					const randomX = (random() - 0.5) * MAP_LIMIT;
 					const randomZ = (random() - 0.5) * MAP_LIMIT;
 					if (Math.abs(randomX) < 4) continue;
 
-                treeClone.position.set(randomX, 0, randomZ);
+					treeClone.position.set(randomX, 0, randomZ);
 
 					// Track this pine tree's position for proximity grass spawning
 					spawnedPositions.trees.push({
@@ -341,31 +354,39 @@ function loadPineTrees(scene, modelLoader) {
 					treeClone.scale.set(finalScale, finalScale, finalScale);
 					treeClone.rotation.set(0, random() * Math.PI * 2, 0);
 
-                scene.add(treeClone);
+					scene.add(treeClone);
 
-                if (i === 0) {
-                    const helper = new THREE.BoxHelper(treeClone, 0xffff00);
-                    scene.add(helper);
-                    console.log(`📍 Cây nấm đã được ép về chiều cao: ${(targetHeight * variation).toFixed(2)}`);
-                }
-            }
-        },
-        onError: (error) => {
-            console.error("🔥 LỖI MẠNG: Không tìm thấy file GLB. Hãy check lại đường dẫn!", error);
-        }
-    });
+					if (i === 0) {
+						const helper = new THREE.BoxHelper(treeClone, 0xffff00);
+						// scene.add(helper);
+						console.log(
+							`📍 Cây nấm đã được ép về chiều cao: ${(targetHeight * variation).toFixed(2)}`,
+						);
+					}
+				}
+			},
+			onError: (error) => {
+				console.error(
+					"🔥 LỖI MẠNG: Không tìm thấy file GLB. Hãy check lại đường dẫn!",
+					error,
+				);
+			},
+		},
+	);
 }
 
 // ==========================================
 // 2. TẢI NẤM PHÁT SÁNG
 // ==========================================
 function loadMushrooms(scene, modelLoader) {
-    modelLoader.loadModel('/assets/models/mushroom/stylized_glowing_mushrooms.glb', {
-        position: [0, -100, 0],
-        scale: [1, 1, 1],
-        rotation: [0, 0, 0],
-        onLoad: (model) => {
-            console.log("🍄 ĐÃ TẢI NẤM! Bắt đầu rải rác khắp rừng...");
+	modelLoader.loadModel(
+		"/assets/models/mushroom/stylized_glowing_mushrooms.glb",
+		{
+			position: [0, -100, 0],
+			scale: [1, 1, 1],
+			rotation: [0, 0, 0],
+			onLoad: (model) => {
+				console.log("🍄 ĐÃ TẢI NẤM! Bắt đầu rải rác khắp rừng...");
 
 				// ⭐ LOCAL PRNG INSTANCE: Create isolated random generator for this loader
 				const random = createRandomGenerator(SEEDS.glowingMushrooms);
@@ -374,21 +395,21 @@ function loadMushrooms(scene, modelLoader) {
 				const size = new THREE.Vector3();
 				box.getSize(size);
 
-            const targetHeight = 1.5;
-            const actualHeight = size.y > 0 ? size.y : 1;
-            const baseScale = targetHeight / actualHeight;
+				const targetHeight = 1.5;
+				const actualHeight = size.y > 0 ? size.y : 1;
+				const baseScale = targetHeight / actualHeight;
 
-            const mushroomCount = 100;
+				const mushroomCount = 100;
 
-            for (let i = 0; i < mushroomCount; i++) {
-                const mushroomClone = model.clone();
+				for (let i = 0; i < mushroomCount; i++) {
+					const mushroomClone = model.clone();
 
 					const randomX = (random() - 0.5) * MAP_LIMIT;
 					const randomZ = (random() - 0.5) * MAP_LIMIT;
 
-                if (Math.abs(randomX) < 4) continue;
+					if (Math.abs(randomX) < 4) continue;
 
-                mushroomClone.position.set(randomX, 0, randomZ);
+					mushroomClone.position.set(randomX, 0, randomZ);
 
 					const variation = 0.5 + random();
 					const finalScale = baseScale * variation;
@@ -396,32 +417,33 @@ function loadMushrooms(scene, modelLoader) {
 					mushroomClone.scale.set(finalScale, finalScale, finalScale);
 					mushroomClone.rotation.set(0, random() * Math.PI * 2, 0);
 
-                mushroomClone.traverse((child) => {
-                    if (child.isMesh && child.material) {
-                        child.material.emissive = new THREE.Color(0x00ffff);
-                        child.material.emissiveIntensity = 0.8;
-                    }
-                });
+					mushroomClone.traverse((child) => {
+						if (child.isMesh && child.material) {
+							child.material.emissive = new THREE.Color(0x00ffff);
+							child.material.emissiveIntensity = 0.8;
+						}
+					});
 
-                scene.add(mushroomClone);
-            }
-        },
-        onError: (error) => {
-            console.error("🔥 LỖI TẢI NẤM: Hãy kiểm tra lại đường dẫn!", error);
-        }
-    });
+					scene.add(mushroomClone);
+				}
+			},
+			onError: (error) => {
+				console.error("🔥 LỖI TẢI NẤM: Hãy kiểm tra lại đường dẫn!", error);
+			},
+		},
+	);
 }
 
 // ==========================================
 // 2.1 TẢI NẤM PHÁT SÁNG
 // ==========================================
 function loadMushrooms_type1(scene, modelLoader) {
-    modelLoader.loadModel('/assets/models/mushroom/mushrooms.glb', {
-        position: [0, -100, 0],
-        scale: [1, 1, 1],
-        rotation: [0, 0, 0],
-        onLoad: (model) => {
-            console.log("🍄 ĐÃ TẢI NẤM! Bắt đầu rải rác khắp rừng...");
+	modelLoader.loadModel("/assets/models/mushroom/mushrooms.glb", {
+		position: [0, -100, 0],
+		scale: [1, 1, 1],
+		rotation: [0, 0, 0],
+		onLoad: (model) => {
+			console.log("🍄 ĐÃ TẢI NẤM! Bắt đầu rải rác khắp rừng...");
 
 			// ⭐ LOCAL PRNG INSTANCE: Create isolated random generator for this loader
 			const random = createRandomGenerator(SEEDS.mushroomsType1);
@@ -430,21 +452,21 @@ function loadMushrooms_type1(scene, modelLoader) {
 			const size = new THREE.Vector3();
 			box.getSize(size);
 
-            const targetHeight = 1.5;
-            const actualHeight = size.y > 0 ? size.y : 1;
-            const baseScale = targetHeight / actualHeight;
+			const targetHeight = 1.5;
+			const actualHeight = size.y > 0 ? size.y : 1;
+			const baseScale = targetHeight / actualHeight;
 
-            const mushroomCount = 100;
+			const mushroomCount = 100;
 
-            for (let i = 0; i < mushroomCount; i++) {
-                const mushroomClone = model.clone();
+			for (let i = 0; i < mushroomCount; i++) {
+				const mushroomClone = model.clone();
 
 				const randomX = (random() - 0.5) * MAP_LIMIT;
 				const randomZ = (random() - 0.5) * MAP_LIMIT;
 
-                if (Math.abs(randomX) < 4) continue;
+				if (Math.abs(randomX) < 4) continue;
 
-                mushroomClone.position.set(randomX, 0, randomZ);
+				mushroomClone.position.set(randomX, 0, randomZ);
 
 				const variation = 0.5 + random();
 				const finalScale = baseScale * variation;
@@ -452,20 +474,20 @@ function loadMushrooms_type1(scene, modelLoader) {
 				mushroomClone.scale.set(finalScale, finalScale, finalScale);
 				mushroomClone.rotation.set(0, random() * Math.PI * 2, 0);
 
-                // mushroomClone.traverse((child) => {
-                //     if (child.isMesh && child.material) {
-                //         child.material.emissive = new THREE.Color(0x00ffff); 
-                //         child.material.emissiveIntensity = 0.8; 
-                //     }
-                // });
+				// mushroomClone.traverse((child) => {
+				//     if (child.isMesh && child.material) {
+				//         child.material.emissive = new THREE.Color(0x00ffff);
+				//         child.material.emissiveIntensity = 0.8;
+				//     }
+				// });
 
-                scene.add(mushroomClone);
-            }
-        },
-        onError: (error) => {
-            console.error("🔥 LỖI TẢI NẤM: Hãy kiểm tra lại đường dẫn!", error);
-        }
-    });
+				scene.add(mushroomClone);
+			}
+		},
+		onError: (error) => {
+			console.error("🔥 LỖI TẢI NẤM: Hãy kiểm tra lại đường dẫn!", error);
+		},
+	});
 }
 
 // ==========================================
@@ -565,9 +587,9 @@ function loadGrassType1(scene, modelLoader) {
             // ⭐ LOCAL PRNG INSTANCE: Create isolated random generator for this loader
             const random = createRandomGenerator(SEEDS.grassType1);
 
-            const box = new THREE.Box3().setFromObject(model);
-            const size = new THREE.Vector3();
-            box.getSize(size);
+			const box = new THREE.Box3().setFromObject(model);
+			const size = new THREE.Vector3();
+			box.getSize(size);
 
             const targetHeight = 1.8;
             const actualHeight = size.y > 0 ? size.y : 1;
@@ -633,9 +655,9 @@ function loadGrassType2(scene, modelLoader) {
             // ⭐ LOCAL PRNG INSTANCE: Create isolated random generator for this loader
             const random = createRandomGenerator(SEEDS.grassType2);
 
-            const box = new THREE.Box3().setFromObject(model);
-            const size = new THREE.Vector3();
-            box.getSize(size);
+			const box = new THREE.Box3().setFromObject(model);
+			const size = new THREE.Vector3();
+			box.getSize(size);
 
             const targetHeight = 0.8;
             const actualHeight = size.y > 0 ? size.y : 1;
@@ -713,21 +735,21 @@ function loadRocks(scene, modelLoader, obstacles) {
 			const size = new THREE.Vector3();
 			box.getSize(size);
 
-            const targetHeight = 2.0;
-            const actualHeight = size.y > 0 ? size.y : 1;
-            const baseScale = targetHeight / actualHeight;
+			const targetHeight = 2.0;
+			const actualHeight = size.y > 0 ? size.y : 1;
+			const baseScale = targetHeight / actualHeight;
 
-            const rockCount = 50;
+			const rockCount = 50;
 
-            for (let i = 0; i < rockCount; i++) {
-                const rockClone = model.clone();
+			for (let i = 0; i < rockCount; i++) {
+				const rockClone = model.clone();
 
 				const randomX = (random() - 0.5) * MAP_LIMIT;
 				const randomZ = (random() - 0.5) * MAP_LIMIT;
 
-                if (Math.abs(randomX) < 4) continue;
+				if (Math.abs(randomX) < 4) continue;
 
-                rockClone.position.set(randomX, -0.8, randomZ);
+				rockClone.position.set(randomX, -0.8, randomZ);
 
 				// Track this rock's position for proximity grass spawning
 				spawnedPositions.rocks.push({
@@ -741,83 +763,88 @@ function loadRocks(scene, modelLoader, obstacles) {
 				const scaleY = baseScale * variation;
 				const scaleZ = baseScale * variation * (0.8 + random() * 0.5);
 
-                rockClone.scale.set(scaleX, scaleY, scaleZ);
+				rockClone.scale.set(scaleX, scaleY, scaleZ);
 
 				rockClone.rotation.set(0, random() * Math.PI * 2, 0);
 
-                rockClone.traverse((child) => {
-                    if (child.isMesh) {
-                        child.castShadow = true;
-                        child.receiveShadow = true;
-                    }
-                });
+				rockClone.traverse((child) => {
+					if (child.isMesh) {
+						child.castShadow = true;
+						child.receiveShadow = true;
+					}
+				});
 
-                scene.add(rockClone);
+				scene.add(rockClone);
 
-                if (obstacles) {
-                    // Đợi updateMatrixWorld để world position của từng child mesh chính xác
-                    rockClone.updateMatrixWorld(true);
+				if (obstacles) {
+					// Đợi updateMatrixWorld để world position của từng child mesh chính xác
+					rockClone.updateMatrixWorld(true);
 
-                    // Traverse từng child Mesh (mỗi cục đá nhỏ trong model)
-                    // thay vì tính 1 Box3 bao trọn cả group → tránh block khoảng trống giữa các cục
-                    rockClone.traverse((child) => {
-                        if (!child.isMesh) return;
+					// Traverse từng child Mesh (mỗi cục đá nhỏ trong model)
+					// thay vì tính 1 Box3 bao trọn cả group → tránh block khoảng trống giữa các cục
+					rockClone.traverse((child) => {
+						if (!child.isMesh) return;
 
-                        const childBox = new THREE.Box3().setFromObject(child);
-                        const childCenter = new THREE.Vector3();
-                        childBox.getCenter(childCenter);
-                        const childSize = new THREE.Vector3();
-                        childBox.getSize(childSize);
+						const childBox = new THREE.Box3().setFromObject(child);
+						const childCenter = new THREE.Vector3();
+						childBox.getCenter(childCenter);
+						const childSize = new THREE.Vector3();
+						childBox.getSize(childSize);
 
-                        // Bán kính sphere = nửa chiều nhỏ nhất XZ × 0.75
-                        // (đủ khít phần thân rắn, bỏ qua rìa nhọn nhô ra)
-                        const minXZ = Math.min(childSize.x, childSize.z);
-                        const radius = minXZ * 0.75 * 0.5;
+						// Bán kính sphere = nửa chiều nhỏ nhất XZ × 0.75
+						// (đủ khít phần thân rắn, bỏ qua rìa nhọn nhô ra)
+						const minXZ = Math.min(childSize.x, childSize.z);
+						const radius = minXZ * 0.75 * 0.5;
 
-                        if (radius > 0.1) { // Bỏ qua mesh quá nhỏ (lá, decoration...)
-                            obstacles.push({
-                                type: 'sphere',
-                                center: new THREE.Vector2(childCenter.x, childCenter.z),
-                                radius: radius
-                            });
-                        }
-                    });
-                }
-            }
-        },
-        onError: (error) => console.error("🔥 LỖI TẢI ĐÁ:", error)
-    });
+						if (radius > 0.1) {
+							// Bỏ qua mesh quá nhỏ (lá, decoration...)
+							obstacles.push({
+								type: "sphere",
+								center: new THREE.Vector2(childCenter.x, childCenter.z),
+								radius: radius,
+							});
+						}
+					});
+				}
+			}
+		},
+		onError: (error) => console.error("🔥 LỖI TẢI ĐÁ:", error),
+	});
 }
 
 function loadSkyDome(scene, modelLoader) {
-    modelLoader.loadModel('/assets/texture/night_sky.glb', {
-        position: [0, 0, 0],
-        scale: [1, 1, 1],
-        rotation: [0, 0, 0],
-        onLoad: (model) => {
-            console.log("🌌 ĐÃ TẢI SKYDOME 3D!");
+	modelLoader.loadModel("/assets/texture/night_sky.glb", {
+		position: [0, 0, 0],
+		scale: [1, 1, 1],
+		rotation: [0, 0, 0],
+		onLoad: (model) => {
+			console.log("🌌 ĐÃ TẢI SKYDOME 3D!");
 
-            const box = new THREE.Box3().setFromObject(model);
-            const size = new THREE.Vector3();
-            box.getSize(size);
+			const box = new THREE.Box3().setFromObject(model);
+			const size = new THREE.Vector3();
+			box.getSize(size);
 
-            // Ép bầu trời to lên khổng lồ (bán kính 150)
-            const targetHeight = 150.0;
-            const actualHeight = size.y > 0 ? size.y : 1;
-            const baseScale = targetHeight / actualHeight;
+			// Ép bầu trời to lên khổng lồ (bán kính 150)
+			const targetHeight = 150.0;
+			const actualHeight = size.y > 0 ? size.y : 1;
+			const baseScale = targetHeight / actualHeight;
 
-            model.scale.set(baseScale, baseScale, baseScale);
+			model.scale.set(baseScale, baseScale, baseScale);
+			model.name = "SkyDome";
+			model.userData.isSkyDome = true;
+			model.userData.baseY = 0;
 
-            model.traverse((child) => {
-                if (child.isMesh) {
-                    child.castShadow = false;
-                    child.receiveShadow = false;
-                    if (child.material) child.material.fog = false;
-                }
-            });
+			model.traverse((child) => {
+				if (child.isMesh) {
+					child.castShadow = false;
+					child.receiveShadow = false;
+					if (child.material) child.material.fog = false;
+				}
+			});
 
-            scene.add(model);
-        },
-        onError: (error) => console.error("🔥 LỖI TẢI BẦU TRỜI GLB:", error)
-    });
-};
+			scene.add(model);
+			scene.userData.skyDome = model;
+		},
+		onError: (error) => console.error("🔥 LỖI TẢI BẦU TRỜI GLB:", error),
+	});
+}

@@ -61,22 +61,22 @@ export function createModelLoader(scene) {
 							let keepRatio = 1;
 
 							if (path.includes("grass/single_grass")) {
-								keepRatio = 40;  // 1000 → ~25
+								keepRatio = 10; // 1100 → ~79
 							} else if (path.includes("grass/grass")) {
-								keepRatio = 20;  // 500 → ~25
+								keepRatio = 10; // 520 → ~52
 							} else if (
 								path.includes("mushroom/stylized") ||
 								path.includes("mushroom/mushrooms")
 							) {
-								keepRatio = 8;   // 100 → ~12 mỗi loại
+								keepRatio = 6; // 100 → ~12 mỗi loại
 							} else if (path.includes("mushroom/magical")) {
-								keepRatio = 4;   // 50 → ~12
+								keepRatio = 2; // 50 → ~12
 							} else if (path.includes("rock")) {
-								keepRatio = 3;   // 50 → ~16
+								keepRatio = 3; // 50 → ~16
 							} else if (path.includes("trees/pine")) {
-								keepRatio = 3;   // 70 → ~23
+								keepRatio = 3; // 70 → ~23
 							} else if (path.includes("trees/mushroom")) {
-								keepRatio = 2;   // 20 → ~10
+								keepRatio = 2; // 20 → ~10
 							}
 							// trees/stylized_nature (5 cây) → giữ nguyên
 
