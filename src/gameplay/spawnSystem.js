@@ -39,7 +39,8 @@ export function updateSpawning(scene, playerZ, coins, obstacles, delta) {
                 detail: {
                     hint: firstItem.hint,
                     itemName: firstItem.name,
-                    itemNumber: 1
+                    itemNumber: 1,
+                    meaning: firstItem.meaning
                 }
             }));
             document.dispatchEvent(new CustomEvent("gameStarted", {

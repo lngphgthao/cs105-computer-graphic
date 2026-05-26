@@ -5,33 +5,44 @@ import {
 	updateCameraProjection,
 	initCameraControls,
 	updateCameraFollow,
-} from "./core";
-import {
+	autoRotateCamera,
 	createScene,
 	createRenderer,
 	setupLighting,
 	setupResizeHandler,
 } from "./core";
 
-import { initPlayer, updatePlayer } from "./gameplay/playerController";
-import { getPlayer } from "./gameplay/playerController";
-import { MAP_LIMIT } from "./gameplay/playerController";
-import { updateSpawning } from "./gameplay/spawnSystem";
+import { initPlayer, updatePlayer, resetPlayer, getPlayer, MAP_LIMIT } from "./gameplay/playerController";
+import { updateSpawning, resetSpawnedItems } from "./gameplay/spawnSystem";
 import { checkCollision } from "./gameplay/collisionSystem";
-import { addScore, getScore, getGameOver } from "./gameplay/gameState";
+import { addScore, getScore, getGameOver, togglePause, getPaused, resetGame } from "./gameplay/gameState";
 import { createTransformController } from "./gameplay/transformController";
 import { createModelLoader } from "./gameplay/modelLoader";
-// import { createRenderModeController } from "./ui/renderModeController";
 import { initGameUI } from "./ui/gameUI";
-import { buildEnvironment } from "./environment/environmentBuilder";
+import { buildEnvironment, loadSkyDome, buildIntroDiorama } from "./environment/environmentBuilder";
 import { createGround, setObjectRenderMode } from "./environment/geometries";
 import { createMist, updateMist } from "./environment/mist";
+import { playCollectSound } from "./gameplay/audioSystem";
 import "./styles.css";
 
 const app = document.getElementById("app");
 if (!app) {
 	throw new Error("Missing #app container in index.html");
 }
+
+let loadingPhase = 1;
+
+THREE.DefaultLoadingManager.onProgress = function (url, itemsLoaded, itemsTotal) {
+	const percent = (itemsLoaded / itemsTotal) * 100;
+	document.dispatchEvent(new CustomEvent("loadingProgress", { detail: { percent, phase: loadingPhase } }));
+};
+
+THREE.DefaultLoadingManager.onLoad = function () {
+	// Add a small delay to ensure loading screen is visible at 100%
+	setTimeout(() => {
+		document.dispatchEvent(new CustomEvent("loadingComplete", { detail: { phase: loadingPhase } }));
+	}, 500);
+};
 
 const scene = createScene();
 const renderer = createRenderer(app);
@@ -48,28 +59,84 @@ initCameraControls(camera, renderer.domElement);
 const listener = new THREE.AudioListener();
 camera.add(listener);
 
-// Background music (non-positional)
+// Lắng nghe sự kiện nhặt bảo vật để phát nhạc hiệu
+document.addEventListener("itemCollected", () => {
+	playCollectSound(listener);
+});
+
+// Background and event music (non-positional)
 const audioLoader = new THREE.AudioLoader();
 const backgroundMusic = new THREE.Audio(listener);
+const introMusic = new THREE.Audio(listener);
+const winMusic = new THREE.Audio(listener);
+const loseMusic = new THREE.Audio(listener);
+
+// Load intro music early
 audioLoader.load(
-	"/assets/audio/ocean-bloom-jungle.mp3",
+	"/assets/audio/intro.mp3",
 	(buffer) => {
-		backgroundMusic.setBuffer(buffer);
-		backgroundMusic.setLoop(true);
-		backgroundMusic.setVolume(0.2);
-		try {
-			backgroundMusic.play();
-		} catch (e) {
-			/* autoplay may be blocked */
-		}
+		introMusic.setBuffer(buffer);
+		introMusic.setLoop(true);
+		introMusic.setVolume(0.2);
 	},
 	undefined,
-	(err) =>
-		console.warn(
-			"No background music found at /assets/audio/background_music.mp3",
-			err,
-		),
+	(err) => console.warn("No intro music found, user will add it later", err)
 );
+
+audioLoader.load(
+	"/assets/audio/win.mp3",
+	(buffer) => {
+		winMusic.setBuffer(buffer);
+		winMusic.setLoop(false);
+		winMusic.setVolume(0.4);
+	},
+	undefined,
+	(err) => console.warn("No win music found, user will add it later", err)
+);
+
+audioLoader.load(
+	"/assets/audio/lose.mp3",
+	(buffer) => {
+		loseMusic.setBuffer(buffer);
+		loseMusic.setLoop(false);
+		loseMusic.setVolume(0.4);
+	},
+	undefined,
+	(err) => console.warn("No lose music found, user will add it later", err)
+);
+
+let phase2Started = false;
+
+// Phase 2 event: triggered from gameUI.js when user clicks PLAY
+document.addEventListener("startPhase2Loading", () => {
+	if (phase2Started) {
+		// Environment is already loaded, transition directly to gameplay story
+		document.dispatchEvent(new CustomEvent("loadingComplete", { detail: { phase: 2 } }));
+		return;
+	}
+	phase2Started = true;
+	loadingPhase = 2;
+	
+	// Load the rest of the 3D environment
+	buildEnvironment(scene, modelLoader, obstacles);
+
+	// Load heavy background music in Phase 2
+	audioLoader.load(
+		"/assets/audio/ocean-bloom-jungle.mp3",
+		(buffer) => {
+			backgroundMusic.setBuffer(buffer);
+			backgroundMusic.setLoop(true);
+			backgroundMusic.setVolume(0.2);
+			try {
+				if (musicEnabled) backgroundMusic.play();
+			} catch (e) {
+				/* autoplay may be blocked */
+			}
+		},
+		undefined,
+		(err) => console.warn("No background music found", err)
+	);
+});
 
 let musicEnabled = true;
 window.addEventListener("keydown", (e) => {
@@ -173,9 +240,9 @@ window.natureExplorer = {
 	loadModel: modelLoader.loadModel,
 };
 
-// 2. Chèn dòng này vào để tự động xây dựng toàn bộ khu rừng!
-buildEnvironment(scene, modelLoader, obstacles);
-
+// PHASE 1: CHỈ TẢI SKYDOME VÀ BỐ CỤC INTRO
+loadSkyDome(scene, modelLoader);
+buildIntroDiorama(scene, modelLoader);
 // ------- Simple UI controls for lighting and audio -------
 function createControlsPanel() {
 	const panel = document.createElement("div");
@@ -273,8 +340,12 @@ function createControlsPanel() {
 let isGameActive = false;
 
 initGameUI({
+	renderer,
 	scene,
 	backgroundMusic,
+	introMusic,
+	winMusic,
+	loseMusic,
 	ambientLight,
 	sunlight,
 	onStartGame: () => {
@@ -285,6 +356,12 @@ initGameUI({
 	},
 	onResumeGame: () => {
 		isGameActive = true;
+	},
+	onQuitGame: () => {
+		isGameActive = false;
+		resetGame();
+		resetSpawnedItems(scene);
+		resetPlayer();
 	}
 });
 
@@ -372,6 +449,10 @@ window.addEventListener("keydown", (e) => {
 }, true); // Capture phase!
 
 window.addEventListener("keydown", (event) => {
+	if (event.key === "Escape" && isGameActive) {
+		togglePause();
+	}
+
 	const handledByCamera = handleCameraKeyboard(event);
 	const handledByTransform =
 		typeof transformController !== "undefined"
@@ -394,27 +475,34 @@ function animate(now) {
 	previousTime = now;
 	elapsedTime += deltaSeconds;
 
-	if (isGameActive) {
+	if (isGameActive && !getPaused()) {
 		if (!getGameOver()) {
 			addScore(deltaSeconds * 5);
 			updateHudInfo();
 		}
 
-		updatePlayer(deltaSeconds);
+		updatePlayer(deltaSeconds, camera);
 		const player = getPlayer();
 
 		updateSpawning(scene, player.position.z, coins, obstacles, deltaSeconds);
 		checkCollision(player, coins, obstacles, scene);
-		updateCameraFollow(camera, player);
-	} else {
+		updateCameraFollow(camera, player, deltaSeconds);
+
+		// Calculate compass angle (rotate compass opposite to camera look direction)
+		const dir = new THREE.Vector3();
+		camera.getWorldDirection(dir);
+		// Compass disc rotation: Math.atan2(-x, -z)
+		const angle = Math.atan2(-dir.x, -dir.z) * (180 / Math.PI);
+		document.dispatchEvent(new CustomEvent('cameraRotated', { detail: { angle } }));
+	} else if (!isGameActive) {
 		// Just keep the camera updated to follow the player before game starts
 		const player = getPlayer();
 		if (player) {
-			updateCameraFollow(camera, player);
+			autoRotateCamera(deltaSeconds);
+			updateCameraFollow(camera, player, deltaSeconds);
 		}
 	}
 
-	updatePlayer(deltaSeconds, camera);
 	const player = getPlayer();
 	updateMist(mist, elapsedTime);
 
@@ -441,10 +529,6 @@ function animate(now) {
 			camera.position.z,
 		);
 	}
-
-	updateSpawning(scene, player.position.z, coins, obstacles, deltaSeconds);
-	checkCollision(player, coins, obstacles, scene);
-	updateCameraFollow(camera, player, deltaSeconds);
 	renderer.render(scene, camera);
 	requestAnimationFrame(animate);
 }

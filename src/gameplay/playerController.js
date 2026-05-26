@@ -97,7 +97,6 @@ export function initPlayer(scene, modelLoader, listener) {
 		},
 		onError: (error) => console.error("🔥 LỖI TẢI THỎ DETECTIVE:", error),
 	});
-
 	// --- LẮNG NGHE BÀN PHÍM ---
 	window.addEventListener("keydown", (e) => {
 		const key = e.key.toLowerCase();
@@ -226,4 +225,33 @@ export function updatePlayer(delta, camera) {
 
 export function getPlayer() {
 	return player;
+}
+
+export function resetPlayer() {
+	if (player) {
+		player.position.set(0, 0, 0);
+		player.rotation.set(0, Math.PI, 0);
+
+		// Clear keyboard input state
+		for (const key in keys) {
+			keys[key] = false;
+		}
+
+		if (playerMixer) {
+			const idleClipName = Object.keys(playerActions).find((name) =>
+				name.includes("idle"),
+			);
+			if (idleClipName) {
+				fadeToAnimation(idleClipName);
+			}
+		}
+
+		if (player.userData.footstep && player.userData.footstep.isPlaying) {
+			try {
+				player.userData.footstep.pause();
+			} catch (e) {
+				/* ignore */
+			}
+		}
+	}
 }

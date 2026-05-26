@@ -4,6 +4,7 @@ export {
 	updateCameraProjection,
 	initCameraControls,
 	updateCameraFollow,
+	autoRotateCamera,
 } from "./camera.js";
 export { setupLighting } from "./lighting.js";
 export { createRenderer } from "./renderer.js";

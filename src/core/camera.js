@@ -101,7 +101,10 @@ export function initCameraControls(camera, canvas) {
 	// Click vào canvas → khóa chuột (Pointer Lock)
 	canvas.addEventListener("click", () => {
 		if (!isLocked) {
-			canvas.requestPointerLock();
+			const promise = canvas.requestPointerLock();
+			if (promise) {
+				promise.catch(e => console.warn("Pointer lock blocked (often due to browser cooldown after Esc):", e));
+			}
 		}
 	});
 
@@ -135,4 +138,10 @@ export function initCameraControls(camera, canvas) {
 		},
 		{ passive: false },
 	);
+}
+
+// Hàm xoay camera tự động (dành cho Intro Screen)
+export function autoRotateCamera(deltaSeconds) {
+	// Xoay từ từ theo thời gian (giảm từ 0.3 xuống 0.08 để có góc nhìn chậm rãi, điện ảnh)
+	azimuth -= 0.08 * deltaSeconds;
 }
