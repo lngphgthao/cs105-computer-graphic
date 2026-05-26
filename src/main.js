@@ -1,39 +1,32 @@
 import * as THREE from "three";
-import { initPlayer, updatePlayer } from "./gameplay/playerController";
-import { getPlayer } from "./gameplay/playerController";
-import { updateSpawning } from "./gameplay/spawnSystem";
-import { checkCollision } from "./gameplay/collisionSystem";
-import { addScore, getScore, getGameOver } from "./gameplay/gameState";
-import { createScene } from "./core/scene";
-import { buildEnvironment } from "./environment/environmentBuilder";
-import { createRenderer } from "./core/renderer";
 import {
 	createCamera,
 	moveCamera,
 	updateCameraProjection,
-} from "./core/camera";
-import { updateCameraFollow, initCameraControls } from "./gameplay/cameraSystem";
-import { setupLighting } from "./core/lighting";
-import { setupResizeHandler } from "./core/resize";
+	initCameraControls,
+	updateCameraFollow,
+} from "./core";
 import {
-	createGround,
-	// createSkyDome,
-	setObjectRenderMode,
-} from "./environment/geometries";
+	createScene,
+	createRenderer,
+	setupLighting,
+	setupResizeHandler,
+} from "./core";
+
+import { initPlayer, updatePlayer } from "./gameplay/playerController";
+import { getPlayer } from "./gameplay/playerController";
+import { MAP_LIMIT } from "./gameplay/playerController";
+import { updateSpawning } from "./gameplay/spawnSystem";
+import { checkCollision } from "./gameplay/collisionSystem";
+import { addScore, getScore, getGameOver } from "./gameplay/gameState";
 import { createTransformController } from "./gameplay/transformController";
 import { createModelLoader } from "./gameplay/modelLoader";
 // import { createRenderModeController } from "./ui/renderModeController";
 import { initGameUI } from "./ui/gameUI";
+import { buildEnvironment } from "./environment/environmentBuilder";
+import { createGround, setObjectRenderMode } from "./environment/geometries";
+import { createMist, updateMist } from "./environment/mist";
 import "./styles.css";
-
-document.addEventListener("coinCollected", (e) => {
-	addScore(e.detail.value);
-	console.log("Score:", getScore());
-});
-
-document.addEventListener("gameOver", () => {
-	console.log("Game Over! Final Score:", Math.floor(getScore()));
-});
 
 const app = document.getElementById("app");
 if (!app) {
@@ -97,22 +90,80 @@ const { ambientLight, sunlight } = setupLighting(scene);
 const terrain = createGround();
 scene.add(terrain);
 
-// const skyDome = createSkyDome();
-// scene.add(skyDome);
+const mist = createMist();
+scene.add(mist.group);
 
 const coins = [];
 const obstacles = [];
+const EDGE_WARNING_DISTANCE = 7;
 
-// function applyRenderMode(mode) {
-// 	for (const object of demoObjects) {
-// 		setObjectRenderMode(object, mode);
-// 	}
-// }
+function createBoundaryCue(mapLimit) {
+	const group = new THREE.Group();
+	const stripThickness = 2;
+	const stripLength = mapLimit * 2 + stripThickness * 2;
+	const material = new THREE.MeshBasicMaterial({
+		color: 0xdff6ff,
+		transparent: true,
+		opacity: 0.08,
+		depthWrite: false,
+		side: THREE.DoubleSide,
+		fog: true,
+	});
 
-// const renderModeController = createRenderModeController(applyRenderMode);
+	const north = new THREE.Mesh(
+		new THREE.PlaneGeometry(stripLength, stripThickness),
+		material,
+	);
+	north.rotation.x = -Math.PI / 2;
+	north.position.set(0, 0.04, -mapLimit);
+
+	const south = north.clone();
+	south.position.z = mapLimit;
+
+	const east = new THREE.Mesh(
+		new THREE.PlaneGeometry(stripThickness, stripLength),
+		material,
+	);
+	east.rotation.x = -Math.PI / 2;
+	east.position.set(mapLimit, 0.04, 0);
+
+	const west = east.clone();
+	west.position.x = -mapLimit;
+
+	group.add(north, south, east, west);
+
+	return { group, material };
+}
+
+function createBoundaryWarning() {
+	const warning = document.createElement("div");
+	warning.textContent = "Map boundary reached";
+	warning.style.position = "absolute";
+	warning.style.left = "50%";
+	warning.style.bottom = "28px";
+	warning.style.transform = "translateX(-50%)";
+	warning.style.padding = "8px 12px";
+	warning.style.background = "rgba(11, 26, 33, 0.62)";
+	warning.style.border = "1px solid rgba(200, 235, 255, 0.55)";
+	warning.style.borderRadius = "999px";
+	warning.style.color = "#e6f7ff";
+	warning.style.fontFamily = "sans-serif";
+	warning.style.fontSize = "13px";
+	warning.style.letterSpacing = "0.3px";
+	warning.style.zIndex = "9999";
+	warning.style.opacity = "0";
+	warning.style.transition = "opacity 140ms ease";
+	warning.style.pointerEvents = "none";
+
+	app.appendChild(warning);
+	return warning;
+}
 
 // 1. KHỞI TẠO MODEL LOADER (CHỈ 1 LẦN DUY NHẤT Ở ĐÂY)
 const modelLoader = createModelLoader(scene);
+const boundaryCue = createBoundaryCue(MAP_LIMIT);
+scene.add(boundaryCue.group);
+const boundaryWarning = createBoundaryWarning();
 
 // 2. TRUYỀN VÀO PLAYER CONTROLLER ĐỂ TẢI THỎ (đưa listener để thêm âm thanh bước chân)
 initPlayer(scene, modelLoader, listener);
@@ -199,7 +250,7 @@ function createControlsPanel() {
 		const v = parseFloat(e.target.value);
 		try {
 			backgroundMusic.setVolume(v);
-		} catch (err) { }
+		} catch (err) {}
 	});
 
 	stepVolRow.input.addEventListener("input", (e) => {
@@ -208,7 +259,7 @@ function createControlsPanel() {
 		if (player && player.userData && player.userData.footstep) {
 			try {
 				player.userData.footstep.setVolume(v);
-			} catch (err) { }
+			} catch (err) {}
 		} else {
 			// store desired default for later when footstep exists
 			player && (player.userData._desiredFootstepVol = v);
@@ -322,7 +373,10 @@ window.addEventListener("keydown", (e) => {
 
 window.addEventListener("keydown", (event) => {
 	const handledByCamera = handleCameraKeyboard(event);
-	const handledByTransform = typeof transformController !== "undefined" ? transformController.handleKeyboard(event) : false;
+	const handledByTransform =
+		typeof transformController !== "undefined"
+			? transformController.handleKeyboard(event)
+			: false;
 
 	if (handledByCamera || handledByTransform) {
 		updateHudInfo();
@@ -333,10 +387,12 @@ setupResizeHandler(renderer, camera);
 updateHudInfo();
 
 let previousTime = performance.now();
+let elapsedTime = 0;
 
 function animate(now) {
 	const deltaSeconds = (now - previousTime) / 1000;
 	previousTime = now;
+	elapsedTime += deltaSeconds;
 
 	if (isGameActive) {
 		if (!getGameOver()) {
@@ -360,6 +416,31 @@ function animate(now) {
 
 	updatePlayer(deltaSeconds, camera);
 	const player = getPlayer();
+	updateMist(mist, elapsedTime);
+
+	if (player) {
+		const edgeDistance =
+			MAP_LIMIT -
+			Math.max(Math.abs(player.position.x), Math.abs(player.position.z));
+		const clampedDistance = Math.max(edgeDistance, 0);
+		const warningStrength = THREE.MathUtils.clamp(
+			(EDGE_WARNING_DISTANCE - clampedDistance) / EDGE_WARNING_DISTANCE,
+			0,
+			1,
+		);
+		const pulse = (Math.sin(elapsedTime * 3.2) * 0.5 + 0.5) * warningStrength;
+		boundaryCue.material.opacity = 0.07 + warningStrength * 0.18 + pulse * 0.08;
+		boundaryWarning.style.opacity = warningStrength > 0.03 ? "1" : "0";
+	}
+
+	const skyDome = scene.userData.skyDome;
+	if (skyDome) {
+		skyDome.position.set(
+			camera.position.x,
+			skyDome.userData.baseY ?? 0,
+			camera.position.z,
+		);
+	}
 
 	updateSpawning(scene, player.position.z, coins, obstacles, deltaSeconds);
 	checkCollision(player, coins, obstacles, scene);
