@@ -1,17 +1,174 @@
 import * as THREE from "three";
 
+// const GRASS_LIMIT = 200;
+// const MAP_LIMIT = 85;   // Giới hạn cây/đá không vượt quá 50
+// ==========================================
+// THIẾT LẬP KÍCH THƯỚC BẢN ĐỒ (MAP BOUNDARIES)
+// ==========================================
+// Mặt đất của bạn là 100x100 (từ -50 đến +50).
+// Ta chừa lại 4 đơn vị ở mép (buffer) để cành lá/rìa đá không bị tràn ra ngoài không khí.
+const MAX_BOUND = 40; // Giới hạn tuyệt đối an toàn là -40 đến +40
+const MAP_LIMIT = MAX_BOUND * 2; // = 80 (Dùng để nhân với Math.random)
+const GRASS_LIMIT = MAX_BOUND;   // Cỏ cũng không được mọc vượt quá 40
+
+
+// ==========================================
+// SEED CONFIGURATION 
+// ==========================================
+const BASE_MAP_SEED = 12345; 
+
+const SEEDS = {
+    trees: BASE_MAP_SEED + 3,
+    mushroomTrees: BASE_MAP_SEED + 1,
+    pineTrees: BASE_MAP_SEED + 6,
+    glowingMushrooms: BASE_MAP_SEED + 4,
+    mushroomsType1: BASE_MAP_SEED + 5,
+    mushroomsType2: BASE_MAP_SEED + 6,
+    rocks: BASE_MAP_SEED + 7,
+    grassType1: BASE_MAP_SEED + 8,
+    grassType2: BASE_MAP_SEED + 9,
+};
+
+// ==========================================
+// ISOLATED PRNG FACTORY - Creates deterministic random generators
+// ==========================================
+/**
+ * Creates a closure-based PRNG (Pseudo-Random Number Generator)
+ * @param {number} seed - Initial seed value (must be a 32-bit integer)
+ * @returns {function} Random function that returns [0, 1)
+ */
+function createRandomGenerator(seed) {
+	let currentSeed = seed >>> 0; // Ensure 32-bit unsigned integer
+	
+	return function random() {
+		currentSeed = (currentSeed * 9301 + 49297) % 233280;
+		return currentSeed / 233280; // Returns [0, 1)
+	};
+}
+
+// ==========================================
+// SHARED POSITION TRACKING FOR PROXIMITY-BASED GRASS SPAWNING
+// ==========================================
+const spawnedPositions = {
+	trees: [],
+	mushroom_trees: [],
+	rocks: []
+};
+
 export function buildEnvironment(scene, modelLoader, obstacles) {
-    loadTrees(scene, modelLoader);
-    loadMushroomTrees(scene, modelLoader);
-    // loadPineTrees(scene, modelLoader);
-    loadMushrooms(scene, modelLoader);
-    loadMushrooms_type1(scene, modelLoader);
-    // loadMushrooms_type2(scene, modelLoader);
-    loadGrassType1(scene, modelLoader);
-    loadGrassType2(scene, modelLoader);
-    loadRocks(scene, modelLoader, obstacles);
-    // GỌI HÀM BẦU TRỜI NGAY TẠI ĐÂY
-    loadSkyDome(scene, modelLoader);
+	loadTrees(scene, modelLoader);
+	loadMushroomTrees(scene, modelLoader);
+	loadPineTrees(scene, modelLoader);
+	loadMushrooms(scene, modelLoader);
+	loadMushrooms_type1(scene, modelLoader);
+	// loadMushrooms_type2(scene, modelLoader);
+	loadRocks(scene, modelLoader, obstacles);
+	// Load grass AFTER trees/rocks so positions are available
+	// (Asynchronous callbacks mean grass will use whatever positions are loaded by then)
+	loadGrassType1(scene, modelLoader);
+	loadGrassType2(scene, modelLoader);
+	// GỌI HÀM BẦU TRỜI NGAY TẠI ĐÂY
+	// loadSkyDome(scene, modelLoader);
+}
+
+/**
+ * Random cluster sampler (legacy, kept for reference)
+ */
+function createGrassSampler(clusterCount, spread) {
+	const clusters = Array.from({ length: clusterCount }, () => ({
+		x: (Math.random() - 0.5) * 82,
+		z: (Math.random() - 0.5) * 82,
+		radius: spread * (0.7 + Math.random() * 0.6),
+	}));
+
+	return () => {
+		const cluster = clusters[Math.floor(Math.random() * clusters.length)];
+		const angle = Math.random() * Math.PI * 2;
+		const distance = Math.sqrt(Math.random()) * cluster.radius;
+
+		return {
+			x: THREE.MathUtils.clamp(
+				cluster.x + Math.cos(angle) * distance,
+				-GRASS_LIMIT,
+				GRASS_LIMIT,
+			),
+			z: THREE.MathUtils.clamp(
+				cluster.z + Math.sin(angle) * distance,
+				-GRASS_LIMIT,
+				GRASS_LIMIT,
+			),
+		};
+	};
+}
+
+/**
+ * Proximity-based grass sampler with density falloff
+ * Spawns grass densely around tree/rock bases, thinning out with distance
+ * 
+ * @param {Object} positions - Reference to spawnedPositions object
+ * @param {function} randomFn - Isolated PRNG function for deterministic behavior
+ * @param {number} densityRadius - Radius where grass density is high (default 12)
+ * @param {number} maxRadius - Maximum radius from object center (default 22)
+ */
+function createProximityGrassSampler(positions, randomFn, densityRadius = 12, maxRadius = 22) {
+	return () => {
+		// Combine all object positions
+		let allPositions = [
+			...positions.trees,
+			...positions.mushroom_trees,
+			...positions.rocks
+		];
+
+		// Fallback to random placement if no objects spawned yet
+		if (allPositions.length === 0) {
+			return {
+				x: (randomFn() - 0.5) * (GRASS_LIMIT * 2),
+				z: (randomFn() - 0.5) * (GRASS_LIMIT * 2)
+			};
+		}
+
+		// ⭐ DETERMINISTIC ARRAY SORTING: Sort by x then z
+		// This neutralizes the asynchronous push order from different loaders
+		allPositions = allPositions.sort((a, b) => {
+			return (a.x - b.x) || (a.z - b.z);
+		});
+
+		// Pick a random tree/rock as the cluster center from sorted array
+		const center = allPositions[Math.floor(randomFn() * allPositions.length)];
+
+		// Generate position with density falloff
+		// Closer to center = more likely to have grass
+		// Further away = exponentially less likely
+		let distance;
+		let attemptCount = 0;
+		const maxAttempts = 10;
+
+		do {
+			distance = Math.sqrt(randomFn()) * maxRadius;
+			const densityFalloff = Math.exp(-Math.pow(distance / densityRadius, 2));
+			
+			if (randomFn() < densityFalloff) {
+				break; // Generated a valid position
+			}
+
+			attemptCount++;
+		} while (attemptCount < maxAttempts);
+
+		const angle = randomFn() * Math.PI * 2;
+
+		return {
+			x: THREE.MathUtils.clamp(
+				center.x + Math.cos(angle) * distance,
+				-GRASS_LIMIT,
+				GRASS_LIMIT
+			),
+			z: THREE.MathUtils.clamp(
+				center.z + Math.sin(angle) * distance,
+				-GRASS_LIMIT,
+				GRASS_LIMIT
+			)
+		};
+	};
 }
 
 // ==========================================
@@ -25,31 +182,40 @@ function loadTrees(scene, modelLoader) {
         onLoad: (model) => {
             console.log("✅ ĐÃ TẢI FILE GLB! Bắt đầu ép size...");
 
-            const box = new THREE.Box3().setFromObject(model);
-            const size = new THREE.Vector3();
-            box.getSize(size);
-            console.log(`📏 Chiều cao thật của cây gốc: ${size.y.toFixed(2)}`);
+				// ⭐ LOCAL PRNG INSTANCE: Create isolated random generator for this loader
+				const random = createRandomGenerator(SEEDS.trees);
+
+				const box = new THREE.Box3().setFromObject(model);
+				const size = new THREE.Vector3();
+				box.getSize(size);
+				console.log(`📏 Chiều cao thật của cây gốc: ${size.y.toFixed(2)}`);
 
             const targetHeight = 18.0;
             const actualHeight = size.y > 0 ? size.y : 1;
             const baseScale = targetHeight / actualHeight;
 
-            const treeCount = 5;
+				const treeCount = 8;
 
             for (let i = 0; i < treeCount; i++) {
                 const treeClone = model.clone();
 
-                const randomX = (Math.random() - 0.5) * 120;
-                const randomZ = (Math.random() - 0.5) * 120;
-                if (Math.abs(randomX) < 4) continue;
+					const randomX = (random() - 0.5) * MAP_LIMIT;
+					const randomZ = (random() - 0.5) * MAP_LIMIT;
+					if (Math.abs(randomX) < 4) continue;
 
                 treeClone.position.set(randomX, 0, randomZ);
 
-                const variation = 0.8 + (Math.random() * 0.6);
-                const finalScale = baseScale * variation;
+					// Track this tree's position for proximity grass spawning
+					spawnedPositions.trees.push({
+						x: randomX,
+						z: randomZ
+					});
 
-                treeClone.scale.set(finalScale, finalScale, finalScale);
-                treeClone.rotation.set(0, Math.random() * Math.PI * 2, 0);
+					const variation = 0.8 + random() * 0.6;
+					const finalScale = baseScale * variation;
+
+					treeClone.scale.set(finalScale, finalScale, finalScale);
+					treeClone.rotation.set(0, random() * Math.PI * 2, 0);
 
                 scene.add(treeClone);
 
@@ -78,10 +244,13 @@ function loadMushroomTrees(scene, modelLoader) {
         onLoad: (model) => {
             console.log("✅ ĐÃ TẢI FILE GLB! Bắt đầu ép size...");
 
-            const box = new THREE.Box3().setFromObject(model);
-            const size = new THREE.Vector3();
-            box.getSize(size);
-            console.log(`📏 Chiều cao thật của cây gốc: ${size.y.toFixed(2)}`);
+			// ⭐ LOCAL PRNG INSTANCE: Create isolated random generator for this loader
+			const random = createRandomGenerator(SEEDS.mushroomTrees);
+
+			const box = new THREE.Box3().setFromObject(model);
+			const size = new THREE.Vector3();
+			box.getSize(size);
+			console.log(`📏 Chiều cao thật của cây gốc: ${size.y.toFixed(2)}`);
 
             const targetHeight = 10.0;
             const actualHeight = size.y > 0 ? size.y : 1;
@@ -92,17 +261,23 @@ function loadMushroomTrees(scene, modelLoader) {
             for (let i = 0; i < treeCount; i++) {
                 const treeClone = model.clone();
 
-                const randomX = (Math.random() - 0.5) * 120;
-                const randomZ = (Math.random() - 0.5) * 120;
-                if (Math.abs(randomX) < 4) continue;
+				const randomX = (random() - 0.5) * MAP_LIMIT;
+				const randomZ = (random() - 0.5) * MAP_LIMIT;
+				if (Math.abs(randomX) < 4) continue;
 
                 treeClone.position.set(randomX, 0, randomZ);
 
-                const variation = 0.8 + (Math.random() * 0.6);
-                const finalScale = baseScale * variation;
+				// Track this mushroom tree's position for proximity grass spawning
+				spawnedPositions.mushroom_trees.push({
+					x: randomX,
+					z: randomZ
+				});
 
-                treeClone.scale.set(finalScale, finalScale, finalScale);
-                treeClone.rotation.set(0, Math.random() * Math.PI * 2, 0);
+				const variation = 0.8 + random() * 0.6;
+				const finalScale = baseScale * variation;
+
+				treeClone.scale.set(finalScale, finalScale, finalScale);
+				treeClone.rotation.set(0, random() * Math.PI * 2, 0);
 
                 scene.add(treeClone);
 
@@ -131,31 +306,40 @@ function loadPineTrees(scene, modelLoader) {
         onLoad: (model) => {
             console.log("✅ ĐÃ TẢI FILE GLB! Bắt đầu ép size...");
 
-            const box = new THREE.Box3().setFromObject(model);
-            const size = new THREE.Vector3();
-            box.getSize(size);
-            console.log(`📏 Chiều cao thật của cây gốc: ${size.y.toFixed(2)}`);
+				// ⭐ LOCAL PRNG INSTANCE: Create isolated random generator for this loader
+				const random = createRandomGenerator(SEEDS.pineTrees);
+
+				const box = new THREE.Box3().setFromObject(model);
+				const size = new THREE.Vector3();
+				box.getSize(size);
+				console.log(`📏 Chiều cao thật của cây gốc: ${size.y.toFixed(2)}`);
 
             const targetHeight = 15.0;
             const actualHeight = size.y > 0 ? size.y : 1;
             const baseScale = targetHeight / actualHeight;
 
-            const treeCount = 70;
+				const treeCount = 15;
 
             for (let i = 0; i < treeCount; i++) {
                 const treeClone = model.clone();
 
-                const randomX = (Math.random() - 0.5) * 120;
-                const randomZ = (Math.random() - 0.5) * 120;
-                if (Math.abs(randomX) < 4) continue;
+					const randomX = (random() - 0.5) * MAP_LIMIT;
+					const randomZ = (random() - 0.5) * MAP_LIMIT;
+					if (Math.abs(randomX) < 4) continue;
 
                 treeClone.position.set(randomX, 0, randomZ);
 
-                const variation = 0.8 + (Math.random() * 0.6);
-                const finalScale = baseScale * variation;
+					// Track this pine tree's position for proximity grass spawning
+					spawnedPositions.trees.push({
+						x: randomX,
+						z: randomZ
+					});
 
-                treeClone.scale.set(finalScale, finalScale, finalScale);
-                treeClone.rotation.set(0, Math.random() * Math.PI * 2, 0);
+					const variation = 0.8 + random() * 0.6;
+					const finalScale = baseScale * variation;
+
+					treeClone.scale.set(finalScale, finalScale, finalScale);
+					treeClone.rotation.set(0, random() * Math.PI * 2, 0);
 
                 scene.add(treeClone);
 
@@ -183,9 +367,12 @@ function loadMushrooms(scene, modelLoader) {
         onLoad: (model) => {
             console.log("🍄 ĐÃ TẢI NẤM! Bắt đầu rải rác khắp rừng...");
 
-            const box = new THREE.Box3().setFromObject(model);
-            const size = new THREE.Vector3();
-            box.getSize(size);
+				// ⭐ LOCAL PRNG INSTANCE: Create isolated random generator for this loader
+				const random = createRandomGenerator(SEEDS.glowingMushrooms);
+
+				const box = new THREE.Box3().setFromObject(model);
+				const size = new THREE.Vector3();
+				box.getSize(size);
 
             const targetHeight = 1.5;
             const actualHeight = size.y > 0 ? size.y : 1;
@@ -196,18 +383,18 @@ function loadMushrooms(scene, modelLoader) {
             for (let i = 0; i < mushroomCount; i++) {
                 const mushroomClone = model.clone();
 
-                const randomX = (Math.random() - 0.5) * 120;
-                const randomZ = (Math.random() - 0.5) * 120;
+					const randomX = (random() - 0.5) * MAP_LIMIT;
+					const randomZ = (random() - 0.5) * MAP_LIMIT;
 
                 if (Math.abs(randomX) < 4) continue;
 
                 mushroomClone.position.set(randomX, 0, randomZ);
 
-                const variation = 0.5 + Math.random();
-                const finalScale = baseScale * variation;
+					const variation = 0.5 + random();
+					const finalScale = baseScale * variation;
 
-                mushroomClone.scale.set(finalScale, finalScale, finalScale);
-                mushroomClone.rotation.set(0, Math.random() * Math.PI * 2, 0);
+					mushroomClone.scale.set(finalScale, finalScale, finalScale);
+					mushroomClone.rotation.set(0, random() * Math.PI * 2, 0);
 
                 mushroomClone.traverse((child) => {
                     if (child.isMesh && child.material) {
@@ -236,9 +423,12 @@ function loadMushrooms_type1(scene, modelLoader) {
         onLoad: (model) => {
             console.log("🍄 ĐÃ TẢI NẤM! Bắt đầu rải rác khắp rừng...");
 
-            const box = new THREE.Box3().setFromObject(model);
-            const size = new THREE.Vector3();
-            box.getSize(size);
+			// ⭐ LOCAL PRNG INSTANCE: Create isolated random generator for this loader
+			const random = createRandomGenerator(SEEDS.mushroomsType1);
+
+			const box = new THREE.Box3().setFromObject(model);
+			const size = new THREE.Vector3();
+			box.getSize(size);
 
             const targetHeight = 1.5;
             const actualHeight = size.y > 0 ? size.y : 1;
@@ -249,18 +439,18 @@ function loadMushrooms_type1(scene, modelLoader) {
             for (let i = 0; i < mushroomCount; i++) {
                 const mushroomClone = model.clone();
 
-                const randomX = (Math.random() - 0.5) * 120;
-                const randomZ = (Math.random() - 0.5) * 120;
+				const randomX = (random() - 0.5) * MAP_LIMIT;
+				const randomZ = (random() - 0.5) * MAP_LIMIT;
 
                 if (Math.abs(randomX) < 4) continue;
 
                 mushroomClone.position.set(randomX, 0, randomZ);
 
-                const variation = 0.5 + Math.random();
-                const finalScale = baseScale * variation;
+				const variation = 0.5 + random();
+				const finalScale = baseScale * variation;
 
-                mushroomClone.scale.set(finalScale, finalScale, finalScale);
-                mushroomClone.rotation.set(0, Math.random() * Math.PI * 2, 0);
+				mushroomClone.scale.set(finalScale, finalScale, finalScale);
+				mushroomClone.rotation.set(0, random() * Math.PI * 2, 0);
 
                 // mushroomClone.traverse((child) => {
                 //     if (child.isMesh && child.material) {
@@ -279,74 +469,101 @@ function loadMushrooms_type1(scene, modelLoader) {
 }
 
 // ==========================================
-// 2.2 TẢI NẤM PHÁT SÁNG
+// 2.2 TẢI NẤM PHÁT SÁNG CỐ ĐỊNH, NHỎ, BÁM ĐẤT
 // ==========================================
 function loadMushrooms_type2(scene, modelLoader) {
-    modelLoader.loadModel('/assets/models/mushroom/magical_mushroom_magenta.glb', {
-        position: [0, -100, 0],
-        scale: [1, 1, 1],
-        rotation: [0, 0, 0],
-        onLoad: (model) => {
-            console.log("✅ ĐÃ TẢI FILE GLB! Bắt đầu ép size...");
+    modelLoader.loadModel(
+        "/assets/models/mushroom/magical_mushroom_magenta.glb",
+        {
+            position: [0, -100, 0], // Vị trí tạm của model gốc
+            scale: [1, 1, 1],
+            rotation: [0, 0, 0],
+            onLoad: (model) => {
+                // console.log("✅ Tải Magenta Mushrooms cố định");
 
-            const box = new THREE.Box3().setFromObject(model);
-            const size = new THREE.Vector3();
-            box.getSize(size);
-            console.log(`📏 Chiều cao thật của cây gốc: ${size.y.toFixed(2)}`);
+                // ⭐ CỐ ĐỊNH HẠT GIỐNG ĐỘC LẬP cho loại nấm này (giả sử BASE_MAP_SEED đã khai báo ngoài)
+                // Nếu chưa khai báo ngoài, bạn hãy thay bằng createRandomGenerator(12345 + 6);
+                const random = createRandomGenerator(SEEDS.mushroomsType2);
 
-            const targetHeight = 2.0;
-            const actualHeight = size.y > 0 ? size.y : 1;
-            const baseScale = targetHeight / actualHeight;
+                // ⚡⚡ FIX LỖI KHỔNG LỒ (FIX GIANT SIZE BUG) ⚡⚡
+                // Cực kỳ quan trọng: Ép Three.js cập nhật toàn bộ ma trận thế giới trước khi đo kích thước.
+                model.updateMatrixWorld(true); 
 
-            const treeCount = 50;
+                const box = new THREE.Box3().setFromObject(model);
+                const size = new THREE.Vector3();
+                box.getSize(size);
 
-            for (let i = 0; i < treeCount; i++) {
-                const treeClone = model.clone();
+                // ⭐ THIẾT LẬP KÍCH THƯỚC NHỎ (Ví dụ nấm này nhỏ thôi, cao khoảng 1 mét rưỡi)
+                const targetHeight = 0.2; 
+                
+                // Tránh lỗi chia cho số quá nhỏ (vd 0.0001) bằng cách đặt giới hạn đáy
+                const actualHeight = size.y > 0.01 ? size.y : 1; 
+                const baseScale = targetHeight / actualHeight;
 
-                const randomX = (Math.random() - 0.5) * 120;
-                const randomZ = (Math.random() - 0.5) * 120;
-                if (Math.abs(randomX) < 4) continue;
+                // ⭐ Thiết lập số lượng nấm cố định
+                const treeCount = 10;
 
-                treeClone.position.set(randomX, 1, randomZ);
+                for (let i = 0; i < treeCount; i++) {
+                    const treeClone = model.clone();
 
-                const variation = 0.8 + (Math.random() * 0.6);
-                const finalScale = baseScale * variation;
+                    // ⭐ Cố định toạ độ XZ - Dùng MAP_LIMIT (giả sử đã khai báo ngoài là 85)
+                    const randomX = (random() - 0.5) * MAP_LIMIT;
+                    const randomZ = (random() - 0.5) * MAP_LIMIT;
 
-                treeClone.scale.set(finalScale, finalScale, finalScale);
-                treeClone.rotation.set(0, Math.random() * Math.PI * 2, 0);
+                    // Giữ constraint: Không sinh sản trong đường đi ở giữa
+                    if (Math.abs(randomX) < 4) continue;
 
-                treeClone.traverse((child) => {
-                    if (child.isMesh && child.material) {
-                        child.material.emissive = new THREE.Color(0xffc0cb);
-                        child.material.emissiveIntensity = 0.8;
+                    // ⚡⚡ FIX LỖI MỌC XUYÊN ĐẤT (FIX GROUND POSITION BUG) ⚡⚡
+                    // Cách tốt nhất để đặt model khít xuống đất Y=0 mà không lo lỗi origin:
+                    // Chúng ta đo tọa độ Y thấp nhất của model gốc (nhân với scale) và trừ vị trí Y đó.
+                    const yMin = box.min.y * baseScale;
+                    
+                    // Ta đặt vị trí X và Z cố định, vị trí Y trừ đi phần đáy yMin.
+                    // Điều này sẽ ép đáy cây nấm nằm khít ở toạ độ Y=0 (Mặt đất).
+                    // Ta chừa lại một khoảng cực nhỏ (0.01) để model không bị nhấp nháy trên mặt cỏ.
+                    treeClone.position.set(randomX, -yMin + 0.01, randomZ);
+
+                    // ⭐ Cố định Scale variation (nhỏ thôi, không khổng lồ)
+                    const variation = 0.8 + random() * 0.6;
+                    const finalScale = baseScale * variation;
+                    treeClone.scale.set(finalScale, finalScale, finalScale);
+
+                    // ⭐ Cố định Rotation ngẫu nhiên
+                    treeClone.rotation.set(0, random() * Math.PI * 2, 0);
+
+                    // ⭐ Cố định visual phát sáng
+                    treeClone.traverse((child) => {
+                        if (child.isMesh && child.material) {
+                            child.material.emissive = new THREE.Color(0xffc0cb);
+                            child.material.emissiveIntensity = 0.8;
+                        }
+                    });
+
+                    scene.add(treeClone);
+
+                    if (i === 0) {
+                        // console.log(`📍 Cây nấm số 1 đã được rải tại Y=${(-yMin + 0.01).toFixed(3)}`);
                     }
-                });
-
-                scene.add(treeClone);
-
-                if (i === 0) {
-                    const helper = new THREE.BoxHelper(treeClone, 0xffff00);
-                    scene.add(helper);
-                    console.log(`📍 Cây nấm đã được ép về chiều cao: ${(targetHeight * variation).toFixed(2)}`);
                 }
-            }
+            },
+            onError: (error) => console.error("🔥 Lỗi tải Magenta Mushrooms GLB:", error),
         },
-        onError: (error) => {
-            console.error("🔥 LỖI MẠNG: Không tìm thấy file GLB. Hãy check lại đường dẫn!", error);
-        }
-    });
+    );
 }
 
 // ==========================================
 // 3. TẢI CỎ LOẠI 1
 // ==========================================
 function loadGrassType1(scene, modelLoader) {
-    modelLoader.loadModel('/assets/models/grass/grass.glb', {
+    modelLoader.loadModel("/assets/models/grass/grass.glb", {
         position: [0, -100, 0],
         scale: [1, 1, 1],
         rotation: [0, 0, 0],
         onLoad: (model) => {
-            console.log("🌿 ĐÃ TẢI CỎ LOẠI 1! Đang phủ xanh mặt đất...");
+            console.log("🌿 ĐÃ TẢI CỎ LOẠI 1! Đang phủ xanh mặt đất quanh cây và đá...");
+
+            // ⭐ LOCAL PRNG INSTANCE: Create isolated random generator for this loader
+            const random = createRandomGenerator(SEEDS.grassType1);
 
             const box = new THREE.Box3().setFromObject(model);
             const size = new THREE.Vector3();
@@ -355,35 +572,50 @@ function loadGrassType1(scene, modelLoader) {
             const targetHeight = 1.8;
             const actualHeight = size.y > 0 ? size.y : 1;
             const baseScale = targetHeight / actualHeight;
+            const grassCount = 520;
+            
+            setTimeout(() => {
+                // ⭐ Create proximity sampler with isolated PRNG
+                const pickPlacement = createProximityGrassSampler(spawnedPositions, random, 12, 22);
+                for (let i = 0; i < grassCount; i++) {
+                    const grassClone = model.clone();
+                    const { x, z } = pickPlacement();
+                    
+                    // 1. Chừa đường đi ở giữa cho nhân vật
+                    if (Math.max(Math.abs(x), Math.abs(z)) < 1.5) continue;
 
-            const grassCount = 500;
+                    // 2. ⚡ BỨC TƯỜNG TÀNG HÌNH: Loại bỏ ngay những bụi cỏ mọc tràn ra ngoài mép bản đồ
+                    if (Math.abs(x) > MAX_BOUND || Math.abs(z) > MAX_BOUND) continue;
 
-            for (let i = 0; i < grassCount; i++) {
-                const grassClone = model.clone();
+                    grassClone.position.set(x, 0.015, z);
 
-                const randomX = (Math.random() - 0.5) * 120;
-                const randomZ = (Math.random() - 0.5) * 120;
-                if (Math.abs(randomX) < 4) continue;
+                    const variation = 0.7 + random() * 0.6;
+                    const finalScale = baseScale * variation;
 
-                grassClone.position.set(randomX, 0, randomZ);
+                    grassClone.scale.set(
+                        finalScale * (0.92 + random() * 0.25),
+                        finalScale * (0.92 + random() * 0.18),
+                        finalScale * (0.92 + random() * 0.25),
+                    );
+                    grassClone.rotation.set(
+                        (random() - 0.5) * 0.1,
+                        random() * Math.PI * 2,
+                        (random() - 0.5) * 0.1,
+                   );
 
-                const variation = 0.7 + (Math.random() * 0.6);
-                const finalScale = baseScale * variation;
+                    grassClone.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = false;
+                            child.receiveShadow = true;
+                        }
+                    });
 
-                grassClone.scale.set(finalScale, finalScale, finalScale);
-                grassClone.rotation.set(0, Math.random() * Math.PI * 2, 0);
-
-                grassClone.traverse((child) => {
-                    if (child.isMesh) {
-                        child.castShadow = false;
-                        child.receiveShadow = true;
-                    }
-                });
-
-                scene.add(grassClone);
+                    scene.add(grassClone);
             }
+            console.log("🌿 ĐÃ RẢI XONG CỎ LOẠI 1!");
+            }, 2500);
         },
-        onError: (error) => console.error("🔥 LỖI TẢI CỎ 1:", error)
+        onError: (error) => console.error("🔥 LỖI TẢI CỎ 1:", error),
     });
 }
 
@@ -391,12 +623,15 @@ function loadGrassType1(scene, modelLoader) {
 // 4. TẢI CỎ LOẠI 2
 // ==========================================
 function loadGrassType2(scene, modelLoader) {
-    modelLoader.loadModel('/assets/models/grass/single_grass.glb', {
+    modelLoader.loadModel("/assets/models/grass/single_grass.glb", {
         position: [0, -100, 0],
         scale: [1, 1, 1],
         rotation: [0, 0, 0],
         onLoad: (model) => {
-            console.log("🌱 ĐÃ TẢI CỎ LOẠI 2! Rải xen kẽ...");
+            console.log("🌱 ĐÃ TẢI CỎ LOẠI 2! Rải xen kẽ quanh cây và đá...");
+
+            // ⭐ LOCAL PRNG INSTANCE: Create isolated random generator for this loader
+            const random = createRandomGenerator(SEEDS.grassType2);
 
             const box = new THREE.Box3().setFromObject(model);
             const size = new THREE.Vector3();
@@ -405,43 +640,58 @@ function loadGrassType2(scene, modelLoader) {
             const targetHeight = 0.8;
             const actualHeight = size.y > 0 ? size.y : 1;
             const baseScale = targetHeight / actualHeight;
+            const grassCount = 1100;
+            
+            setTimeout(() => {
+                // ⭐ Create proximity sampler with isolated PRNG
+                const pickPlacement = createProximityGrassSampler(spawnedPositions, random, 10, 20);
+                for (let i = 0; i < grassCount; i++) {
+                    const grassClone = model.clone();
+                    const { x, z } = pickPlacement();
+                    
+                    // 1. Chừa đường đi ở giữa cho nhân vật
+                    if (Math.max(Math.abs(x), Math.abs(z)) < 1.5) continue;
 
-            const grassCount = 1000;
+                    // 2. ⚡ BỨC TƯỜNG TÀNG HÌNH: Loại bỏ cỏ tràn mép
+                    if (Math.abs(x) > MAX_BOUND || Math.abs(z) > MAX_BOUND) continue;
 
-            for (let i = 0; i < grassCount; i++) {
-                const grassClone = model.clone();
+                    grassClone.position.set(x, 0.01, z);
 
-                const randomX = (Math.random() - 0.5) * 120;
-                const randomZ = (Math.random() - 0.5) * 120;
-                if (Math.abs(randomX) < 4) continue;
+                    const variation = 0.7 + random() * 0.6;
+                    const finalScale = baseScale * variation;
 
-                grassClone.position.set(randomX, 0, randomZ);
+                    grassClone.scale.set(
+                        finalScale * 2.0 * (0.9 + random() * 0.22),
+                        finalScale * (0.92 + random() * 0.16),
+                        finalScale * 2.0 * (0.9 + random() * 0.22),
+                    );
+                    grassClone.rotation.set(
+                        (random() - 0.5) * 0.08,
+                        random() * Math.PI * 2,
+                        (random() - 0.5) * 0.08,
+                    );
 
-                const variation = 0.7 + (Math.random() * 0.6);
-                const finalScale = baseScale * variation;
+                    grassClone.traverse((child) => {
+                        if (child.isMesh) {
+                            child.castShadow = false;
+                            child.receiveShadow = true;
 
-                grassClone.scale.set(finalScale * 2.0, finalScale, finalScale * 2.0);
-                grassClone.rotation.set(0, Math.random() * Math.PI * 2, 0);
-
-                grassClone.traverse((child) => {
-                    if (child.isMesh) {
-                        child.castShadow = false;
-                        child.receiveShadow = true;
-
-                        if (child.material) {
-                            child.material.transparent = false;
-                            child.material.alphaTest = 0.5;
-                            if (child.material.map) {
-                                child.material.map.anisotropy = 16;
+                            if (child.material) {
+                                child.material.transparent = false;
+                                child.material.alphaTest = 0.5;
+                                if (child.material.map) {
+                                    child.material.map.anisotropy = 16;
+                                }
                             }
                         }
-                    }
-                });
+                    });
 
-                scene.add(grassClone);
-            }
+                    scene.add(grassClone);
+               }
+               console.log("🌱 ĐÃ RẢI XONG CỎ LOẠI 2!");
+            }, 3000); // Cho cỏ loại 2 chờ 3 giây
         },
-        onError: (error) => console.error("🔥 LỖI TẢI CỎ 2:", error)
+        onError: (error) => console.error("🔥 LỖI TẢI CỎ 2:", error),
     });
 }
 
@@ -449,15 +699,19 @@ function loadGrassType2(scene, modelLoader) {
 // 5. TẢI ĐÁ
 // ==========================================
 function loadRocks(scene, modelLoader, obstacles) {
-    modelLoader.loadModel('/assets/models/rock/stylized_rock_for_game.glb', {
-        position: [0, -100, 0],
-        scale: [1, 1, 1],
-        rotation: [0, 0, 0],
-        onLoad: (model) => {
-            console.log("🪨 ĐÃ TẢI ĐÁ! Đang bố trí cảnh quan...");
-            const box = new THREE.Box3().setFromObject(model);
-            const size = new THREE.Vector3();
-            box.getSize(size);
+	modelLoader.loadModel("/assets/models/rock/stylized_rock_for_game.glb", {
+		position: [0, -100, 0],
+		scale: [1, 1, 1],
+		rotation: [0, 0, 0],
+		onLoad: (model) => {
+			console.log("🪨 ĐÃ TẢI ĐÁ! Đang bố trí cảnh quan...");
+
+			// ⭐ LOCAL PRNG INSTANCE: Create isolated random generator for this loader
+			const random = createRandomGenerator(SEEDS.rocks);
+
+			const box = new THREE.Box3().setFromObject(model);
+			const size = new THREE.Vector3();
+			box.getSize(size);
 
             const targetHeight = 2.0;
             const actualHeight = size.y > 0 ? size.y : 1;
@@ -468,26 +722,28 @@ function loadRocks(scene, modelLoader, obstacles) {
             for (let i = 0; i < rockCount; i++) {
                 const rockClone = model.clone();
 
-                const randomX = (Math.random() - 0.5) * 120;
-                const randomZ = (Math.random() - 0.5) * 120;
+				const randomX = (random() - 0.5) * MAP_LIMIT;
+				const randomZ = (random() - 0.5) * MAP_LIMIT;
 
                 if (Math.abs(randomX) < 4) continue;
 
                 rockClone.position.set(randomX, -0.8, randomZ);
 
-                const variation = 0.5 + (Math.random() * 1.5);
+				// Track this rock's position for proximity grass spawning
+				spawnedPositions.rocks.push({
+					x: randomX,
+					z: randomZ
+				});
 
-                const scaleX = baseScale * variation * (0.8 + Math.random() * 0.5);
-                const scaleY = baseScale * variation;
-                const scaleZ = baseScale * variation * (0.8 + Math.random() * 0.5);
+				const variation = 0.5 + random() * 1.5;
+
+				const scaleX = baseScale * variation * (0.8 + random() * 0.5);
+				const scaleY = baseScale * variation;
+				const scaleZ = baseScale * variation * (0.8 + random() * 0.5);
 
                 rockClone.scale.set(scaleX, scaleY, scaleZ);
 
-                rockClone.rotation.set(
-                    0,
-                    Math.random() * Math.PI * 2,
-                    0
-                );
+				rockClone.rotation.set(0, random() * Math.PI * 2, 0);
 
                 rockClone.traverse((child) => {
                     if (child.isMesh) {
