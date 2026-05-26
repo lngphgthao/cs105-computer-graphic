@@ -1,17 +1,17 @@
 import * as THREE from "three";
 
-export function buildEnvironment(scene, modelLoader) {
+export function buildEnvironment(scene, modelLoader, obstacles) {
     loadTrees(scene, modelLoader);
     loadMushroomTrees(scene, modelLoader);
-    loadPineTrees(scene, modelLoader);
+    // loadPineTrees(scene, modelLoader);
     loadMushrooms(scene, modelLoader);
     loadMushrooms_type1(scene, modelLoader);
-    loadMushrooms_type2(scene, modelLoader);
+    // loadMushrooms_type2(scene, modelLoader);
     loadGrassType1(scene, modelLoader);
     loadGrassType2(scene, modelLoader);
-    loadRocks(scene, modelLoader);
+    loadRocks(scene, modelLoader, obstacles);
     // GỌI HÀM BẦU TRỜI NGAY TẠI ĐÂY
-    loadSkyDome(scene, modelLoader); 
+    loadSkyDome(scene, modelLoader);
 }
 
 // ==========================================
@@ -19,8 +19,8 @@ export function buildEnvironment(scene, modelLoader) {
 // ==========================================
 function loadTrees(scene, modelLoader) {
     modelLoader.loadModel('/assets/models/trees/stylized_nature_pack_vol-1__3d_tree.glb', {
-        position: [0, -100, 0],          
-        scale: [1, 1, 1],                
+        position: [0, -100, 0],
+        scale: [1, 1, 1],
         rotation: [0, 0, 0],
         onLoad: (model) => {
             console.log("✅ ĐÃ TẢI FILE GLB! Bắt đầu ép size...");
@@ -30,27 +30,27 @@ function loadTrees(scene, modelLoader) {
             box.getSize(size);
             console.log(`📏 Chiều cao thật của cây gốc: ${size.y.toFixed(2)}`);
 
-            const targetHeight = 18.0; 
-            const actualHeight = size.y > 0 ? size.y : 1; 
-            const baseScale = targetHeight / actualHeight; 
+            const targetHeight = 18.0;
+            const actualHeight = size.y > 0 ? size.y : 1;
+            const baseScale = targetHeight / actualHeight;
 
-            const treeCount = 5; 
+            const treeCount = 5;
 
             for (let i = 0; i < treeCount; i++) {
                 const treeClone = model.clone();
 
                 const randomX = (Math.random() - 0.5) * 120;
                 const randomZ = (Math.random() - 0.5) * 120;
-                if (Math.abs(randomX) < 4) continue; 
+                if (Math.abs(randomX) < 4) continue;
 
                 treeClone.position.set(randomX, 0, randomZ);
 
-                const variation = 0.8 + (Math.random() * 0.6); 
+                const variation = 0.8 + (Math.random() * 0.6);
                 const finalScale = baseScale * variation;
 
                 treeClone.scale.set(finalScale, finalScale, finalScale);
                 treeClone.rotation.set(0, Math.random() * Math.PI * 2, 0);
-                
+
                 scene.add(treeClone);
 
                 if (i === 0) {
@@ -72,8 +72,8 @@ function loadTrees(scene, modelLoader) {
 // ==========================================
 function loadMushroomTrees(scene, modelLoader) {
     modelLoader.loadModel('/assets/models/trees/mushroom__tree.glb', {
-        position: [0, -100, 0],          
-        scale: [1, 1, 1],                
+        position: [0, -100, 0],
+        scale: [1, 1, 1],
         rotation: [0, 0, 0],
         onLoad: (model) => {
             console.log("✅ ĐÃ TẢI FILE GLB! Bắt đầu ép size...");
@@ -83,27 +83,27 @@ function loadMushroomTrees(scene, modelLoader) {
             box.getSize(size);
             console.log(`📏 Chiều cao thật của cây gốc: ${size.y.toFixed(2)}`);
 
-            const targetHeight = 10.0; 
-            const actualHeight = size.y > 0 ? size.y : 1; 
-            const baseScale = targetHeight / actualHeight; 
+            const targetHeight = 10.0;
+            const actualHeight = size.y > 0 ? size.y : 1;
+            const baseScale = targetHeight / actualHeight;
 
-            const treeCount = 20; 
+            const treeCount = 20;
 
             for (let i = 0; i < treeCount; i++) {
                 const treeClone = model.clone();
 
                 const randomX = (Math.random() - 0.5) * 120;
                 const randomZ = (Math.random() - 0.5) * 120;
-                if (Math.abs(randomX) < 4) continue; 
+                if (Math.abs(randomX) < 4) continue;
 
                 treeClone.position.set(randomX, 0, randomZ);
 
-                const variation = 0.8 + (Math.random() * 0.6); 
+                const variation = 0.8 + (Math.random() * 0.6);
                 const finalScale = baseScale * variation;
 
                 treeClone.scale.set(finalScale, finalScale, finalScale);
                 treeClone.rotation.set(0, Math.random() * Math.PI * 2, 0);
-                
+
                 scene.add(treeClone);
 
                 if (i === 0) {
@@ -125,8 +125,8 @@ function loadMushroomTrees(scene, modelLoader) {
 // ==========================================
 function loadPineTrees(scene, modelLoader) {
     modelLoader.loadModel('/assets/models/trees/pine_tree__low_poly_stylized_tree.glb', {
-        position: [0, -100, 0],          
-        scale: [1, 1, 1],                
+        position: [0, -100, 0],
+        scale: [1, 1, 1],
         rotation: [0, 0, 0],
         onLoad: (model) => {
             console.log("✅ ĐÃ TẢI FILE GLB! Bắt đầu ép size...");
@@ -136,27 +136,27 @@ function loadPineTrees(scene, modelLoader) {
             box.getSize(size);
             console.log(`📏 Chiều cao thật của cây gốc: ${size.y.toFixed(2)}`);
 
-            const targetHeight = 15.0; 
-            const actualHeight = size.y > 0 ? size.y : 1; 
-            const baseScale = targetHeight / actualHeight; 
+            const targetHeight = 15.0;
+            const actualHeight = size.y > 0 ? size.y : 1;
+            const baseScale = targetHeight / actualHeight;
 
-            const treeCount = 70; 
+            const treeCount = 70;
 
             for (let i = 0; i < treeCount; i++) {
                 const treeClone = model.clone();
 
                 const randomX = (Math.random() - 0.5) * 120;
                 const randomZ = (Math.random() - 0.5) * 120;
-                if (Math.abs(randomX) < 4) continue; 
+                if (Math.abs(randomX) < 4) continue;
 
                 treeClone.position.set(randomX, 0, randomZ);
 
-                const variation = 0.8 + (Math.random() * 0.6); 
+                const variation = 0.8 + (Math.random() * 0.6);
                 const finalScale = baseScale * variation;
 
                 treeClone.scale.set(finalScale, finalScale, finalScale);
                 treeClone.rotation.set(0, Math.random() * Math.PI * 2, 0);
-                
+
                 scene.add(treeClone);
 
                 if (i === 0) {
@@ -177,7 +177,7 @@ function loadPineTrees(scene, modelLoader) {
 // ==========================================
 function loadMushrooms(scene, modelLoader) {
     modelLoader.loadModel('/assets/models/mushroom/stylized_glowing_mushrooms.glb', {
-        position: [0, -100, 0], 
+        position: [0, -100, 0],
         scale: [1, 1, 1],
         rotation: [0, 0, 0],
         onLoad: (model) => {
@@ -187,23 +187,23 @@ function loadMushrooms(scene, modelLoader) {
             const size = new THREE.Vector3();
             box.getSize(size);
 
-            const targetHeight = 1.5; 
-            const actualHeight = size.y > 0 ? size.y : 1; 
-            const baseScale = targetHeight / actualHeight; 
+            const targetHeight = 1.5;
+            const actualHeight = size.y > 0 ? size.y : 1;
+            const baseScale = targetHeight / actualHeight;
 
-            const mushroomCount = 100; 
+            const mushroomCount = 100;
 
             for (let i = 0; i < mushroomCount; i++) {
                 const mushroomClone = model.clone();
 
                 const randomX = (Math.random() - 0.5) * 120;
                 const randomZ = (Math.random() - 0.5) * 120;
-                
-                if (Math.abs(randomX) < 4) continue; 
+
+                if (Math.abs(randomX) < 4) continue;
 
                 mushroomClone.position.set(randomX, 0, randomZ);
 
-                const variation = 0.5 + Math.random(); 
+                const variation = 0.5 + Math.random();
                 const finalScale = baseScale * variation;
 
                 mushroomClone.scale.set(finalScale, finalScale, finalScale);
@@ -211,11 +211,11 @@ function loadMushrooms(scene, modelLoader) {
 
                 mushroomClone.traverse((child) => {
                     if (child.isMesh && child.material) {
-                        child.material.emissive = new THREE.Color(0x00ffff); 
-                        child.material.emissiveIntensity = 0.8; 
+                        child.material.emissive = new THREE.Color(0x00ffff);
+                        child.material.emissiveIntensity = 0.8;
                     }
                 });
-                
+
                 scene.add(mushroomClone);
             }
         },
@@ -230,7 +230,7 @@ function loadMushrooms(scene, modelLoader) {
 // ==========================================
 function loadMushrooms_type1(scene, modelLoader) {
     modelLoader.loadModel('/assets/models/mushroom/mushrooms.glb', {
-        position: [0, -100, 0], 
+        position: [0, -100, 0],
         scale: [1, 1, 1],
         rotation: [0, 0, 0],
         onLoad: (model) => {
@@ -240,23 +240,23 @@ function loadMushrooms_type1(scene, modelLoader) {
             const size = new THREE.Vector3();
             box.getSize(size);
 
-            const targetHeight = 1.5; 
-            const actualHeight = size.y > 0 ? size.y : 1; 
-            const baseScale = targetHeight / actualHeight; 
+            const targetHeight = 1.5;
+            const actualHeight = size.y > 0 ? size.y : 1;
+            const baseScale = targetHeight / actualHeight;
 
-            const mushroomCount = 100; 
+            const mushroomCount = 100;
 
             for (let i = 0; i < mushroomCount; i++) {
                 const mushroomClone = model.clone();
 
                 const randomX = (Math.random() - 0.5) * 120;
                 const randomZ = (Math.random() - 0.5) * 120;
-                
-                if (Math.abs(randomX) < 4) continue; 
+
+                if (Math.abs(randomX) < 4) continue;
 
                 mushroomClone.position.set(randomX, 0, randomZ);
 
-                const variation = 0.5 + Math.random(); 
+                const variation = 0.5 + Math.random();
                 const finalScale = baseScale * variation;
 
                 mushroomClone.scale.set(finalScale, finalScale, finalScale);
@@ -268,7 +268,7 @@ function loadMushrooms_type1(scene, modelLoader) {
                 //         child.material.emissiveIntensity = 0.8; 
                 //     }
                 // });
-                
+
                 scene.add(mushroomClone);
             }
         },
@@ -283,7 +283,7 @@ function loadMushrooms_type1(scene, modelLoader) {
 // ==========================================
 function loadMushrooms_type2(scene, modelLoader) {
     modelLoader.loadModel('/assets/models/mushroom/magical_mushroom_magenta.glb', {
-        position: [0, -100, 0], 
+        position: [0, -100, 0],
         scale: [1, 1, 1],
         rotation: [0, 0, 0],
         onLoad: (model) => {
@@ -294,22 +294,22 @@ function loadMushrooms_type2(scene, modelLoader) {
             box.getSize(size);
             console.log(`📏 Chiều cao thật của cây gốc: ${size.y.toFixed(2)}`);
 
-            const targetHeight = 2.0; 
-            const actualHeight = size.y > 0 ? size.y : 1; 
-            const baseScale = targetHeight / actualHeight; 
+            const targetHeight = 2.0;
+            const actualHeight = size.y > 0 ? size.y : 1;
+            const baseScale = targetHeight / actualHeight;
 
-            const treeCount = 50; 
+            const treeCount = 50;
 
             for (let i = 0; i < treeCount; i++) {
                 const treeClone = model.clone();
 
                 const randomX = (Math.random() - 0.5) * 120;
                 const randomZ = (Math.random() - 0.5) * 120;
-                if (Math.abs(randomX) < 4) continue; 
+                if (Math.abs(randomX) < 4) continue;
 
                 treeClone.position.set(randomX, 1, randomZ);
 
-                const variation = 0.8 + (Math.random() * 0.6); 
+                const variation = 0.8 + (Math.random() * 0.6);
                 const finalScale = baseScale * variation;
 
                 treeClone.scale.set(finalScale, finalScale, finalScale);
@@ -317,11 +317,11 @@ function loadMushrooms_type2(scene, modelLoader) {
 
                 treeClone.traverse((child) => {
                     if (child.isMesh && child.material) {
-                        child.material.emissive = new THREE.Color(0xffc0cb); 
-                        child.material.emissiveIntensity = 0.8; 
+                        child.material.emissive = new THREE.Color(0xffc0cb);
+                        child.material.emissiveIntensity = 0.8;
                     }
                 });
-                
+
                 scene.add(treeClone);
 
                 if (i === 0) {
@@ -342,7 +342,7 @@ function loadMushrooms_type2(scene, modelLoader) {
 // ==========================================
 function loadGrassType1(scene, modelLoader) {
     modelLoader.loadModel('/assets/models/grass/grass.glb', {
-        position: [0, -100, 0], 
+        position: [0, -100, 0],
         scale: [1, 1, 1],
         rotation: [0, 0, 0],
         onLoad: (model) => {
@@ -352,30 +352,30 @@ function loadGrassType1(scene, modelLoader) {
             const size = new THREE.Vector3();
             box.getSize(size);
 
-            const targetHeight = 1.8; 
-            const actualHeight = size.y > 0 ? size.y : 1; 
-            const baseScale = targetHeight / actualHeight; 
+            const targetHeight = 1.8;
+            const actualHeight = size.y > 0 ? size.y : 1;
+            const baseScale = targetHeight / actualHeight;
 
-            const grassCount = 500; 
+            const grassCount = 500;
 
             for (let i = 0; i < grassCount; i++) {
                 const grassClone = model.clone();
 
                 const randomX = (Math.random() - 0.5) * 120;
                 const randomZ = (Math.random() - 0.5) * 120;
-                if (Math.abs(randomX) < 4) continue; 
+                if (Math.abs(randomX) < 4) continue;
 
                 grassClone.position.set(randomX, 0, randomZ);
 
-                const variation = 0.7 + (Math.random() * 0.6); 
+                const variation = 0.7 + (Math.random() * 0.6);
                 const finalScale = baseScale * variation;
 
                 grassClone.scale.set(finalScale, finalScale, finalScale);
                 grassClone.rotation.set(0, Math.random() * Math.PI * 2, 0);
-                
+
                 grassClone.traverse((child) => {
                     if (child.isMesh) {
-                        child.castShadow = false; 
+                        child.castShadow = false;
                         child.receiveShadow = true;
                     }
                 });
@@ -392,7 +392,7 @@ function loadGrassType1(scene, modelLoader) {
 // ==========================================
 function loadGrassType2(scene, modelLoader) {
     modelLoader.loadModel('/assets/models/grass/single_grass.glb', {
-        position: [0, -100, 0], 
+        position: [0, -100, 0],
         scale: [1, 1, 1],
         rotation: [0, 0, 0],
         onLoad: (model) => {
@@ -402,35 +402,35 @@ function loadGrassType2(scene, modelLoader) {
             const size = new THREE.Vector3();
             box.getSize(size);
 
-            const targetHeight = 0.8; 
-            const actualHeight = size.y > 0 ? size.y : 1; 
-            const baseScale = targetHeight / actualHeight; 
+            const targetHeight = 0.8;
+            const actualHeight = size.y > 0 ? size.y : 1;
+            const baseScale = targetHeight / actualHeight;
 
-            const grassCount = 1000; 
+            const grassCount = 1000;
 
             for (let i = 0; i < grassCount; i++) {
                 const grassClone = model.clone();
 
                 const randomX = (Math.random() - 0.5) * 120;
                 const randomZ = (Math.random() - 0.5) * 120;
-                if (Math.abs(randomX) < 4) continue; 
+                if (Math.abs(randomX) < 4) continue;
 
                 grassClone.position.set(randomX, 0, randomZ);
 
-                const variation = 0.7 + (Math.random() * 0.6); 
+                const variation = 0.7 + (Math.random() * 0.6);
                 const finalScale = baseScale * variation;
 
                 grassClone.scale.set(finalScale * 2.0, finalScale, finalScale * 2.0);
                 grassClone.rotation.set(0, Math.random() * Math.PI * 2, 0);
-                
+
                 grassClone.traverse((child) => {
                     if (child.isMesh) {
-                        child.castShadow = false; 
+                        child.castShadow = false;
                         child.receiveShadow = true;
-                        
+
                         if (child.material) {
-                            child.material.transparent = false; 
-                            child.material.alphaTest = 0.5; 
+                            child.material.transparent = false;
+                            child.material.alphaTest = 0.5;
                             if (child.material.map) {
                                 child.material.map.anisotropy = 16;
                             }
@@ -448,9 +448,9 @@ function loadGrassType2(scene, modelLoader) {
 // ==========================================
 // 5. TẢI ĐÁ
 // ==========================================
-function loadRocks(scene, modelLoader) {
+function loadRocks(scene, modelLoader, obstacles) {
     modelLoader.loadModel('/assets/models/rock/stylized_rock_for_game.glb', {
-        position: [0, -100, 0], 
+        position: [0, -100, 0],
         scale: [1, 1, 1],
         rotation: [0, 0, 0],
         onLoad: (model) => {
@@ -459,44 +459,74 @@ function loadRocks(scene, modelLoader) {
             const size = new THREE.Vector3();
             box.getSize(size);
 
-            const targetHeight = 2.0; 
-            const actualHeight = size.y > 0 ? size.y : 1; 
-            const baseScale = targetHeight / actualHeight; 
+            const targetHeight = 2.0;
+            const actualHeight = size.y > 0 ? size.y : 1;
+            const baseScale = targetHeight / actualHeight;
 
-            const rockCount = 50; 
+            const rockCount = 50;
 
             for (let i = 0; i < rockCount; i++) {
                 const rockClone = model.clone();
 
                 const randomX = (Math.random() - 0.5) * 120;
                 const randomZ = (Math.random() - 0.5) * 120;
-                
-                if (Math.abs(randomX) < 4) continue; 
+
+                if (Math.abs(randomX) < 4) continue;
 
                 rockClone.position.set(randomX, -0.8, randomZ);
 
-                const variation = 0.5 + (Math.random() * 1.5); 
-                
+                const variation = 0.5 + (Math.random() * 1.5);
+
                 const scaleX = baseScale * variation * (0.8 + Math.random() * 0.5);
                 const scaleY = baseScale * variation;
                 const scaleZ = baseScale * variation * (0.8 + Math.random() * 0.5);
 
                 rockClone.scale.set(scaleX, scaleY, scaleZ);
-                
+
                 rockClone.rotation.set(
-                    0,                           
-                    Math.random() * Math.PI * 2, 
-                    0                            
+                    0,
+                    Math.random() * Math.PI * 2,
+                    0
                 );
 
                 rockClone.traverse((child) => {
                     if (child.isMesh) {
-                        child.castShadow = true; 
+                        child.castShadow = true;
                         child.receiveShadow = true;
                     }
                 });
 
                 scene.add(rockClone);
+
+                if (obstacles) {
+                    // Đợi updateMatrixWorld để world position của từng child mesh chính xác
+                    rockClone.updateMatrixWorld(true);
+
+                    // Traverse từng child Mesh (mỗi cục đá nhỏ trong model)
+                    // thay vì tính 1 Box3 bao trọn cả group → tránh block khoảng trống giữa các cục
+                    rockClone.traverse((child) => {
+                        if (!child.isMesh) return;
+
+                        const childBox = new THREE.Box3().setFromObject(child);
+                        const childCenter = new THREE.Vector3();
+                        childBox.getCenter(childCenter);
+                        const childSize = new THREE.Vector3();
+                        childBox.getSize(childSize);
+
+                        // Bán kính sphere = nửa chiều nhỏ nhất XZ × 0.75
+                        // (đủ khít phần thân rắn, bỏ qua rìa nhọn nhô ra)
+                        const minXZ = Math.min(childSize.x, childSize.z);
+                        const radius = minXZ * 0.75 * 0.5;
+
+                        if (radius > 0.1) { // Bỏ qua mesh quá nhỏ (lá, decoration...)
+                            obstacles.push({
+                                type: 'sphere',
+                                center: new THREE.Vector2(childCenter.x, childCenter.z),
+                                radius: radius
+                            });
+                        }
+                    });
+                }
             }
         },
         onError: (error) => console.error("🔥 LỖI TẢI ĐÁ:", error)
@@ -505,28 +535,28 @@ function loadRocks(scene, modelLoader) {
 
 function loadSkyDome(scene, modelLoader) {
     modelLoader.loadModel('/assets/texture/night_sky.glb', {
-        position: [0, 0, 0], 
+        position: [0, 0, 0],
         scale: [1, 1, 1],
         rotation: [0, 0, 0],
         onLoad: (model) => {
             console.log("🌌 ĐÃ TẢI SKYDOME 3D!");
-            
+
             const box = new THREE.Box3().setFromObject(model);
             const size = new THREE.Vector3();
             box.getSize(size);
-            
+
             // Ép bầu trời to lên khổng lồ (bán kính 150)
-            const targetHeight = 150.0; 
-            const actualHeight = size.y > 0 ? size.y : 1; 
-            const baseScale = targetHeight / actualHeight; 
-            
+            const targetHeight = 150.0;
+            const actualHeight = size.y > 0 ? size.y : 1;
+            const baseScale = targetHeight / actualHeight;
+
             model.scale.set(baseScale, baseScale, baseScale);
 
             model.traverse((child) => {
                 if (child.isMesh) {
                     child.castShadow = false;
                     child.receiveShadow = false;
-                    if (child.material) child.material.fog = false; 
+                    if (child.material) child.material.fog = false;
                 }
             });
 
