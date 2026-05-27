@@ -1,24 +1,30 @@
 # Nature Explorer
 
-Nature Explorer là một môi trường tương tác 3D dành cho đồ án môn Computer
-Graphics. Người chơi khám phá một thế giới lấy cảm hứng từ khu rừng, tương tác
-với các vật thể, và thu thập các món đồ. Dự án được thiết kế để luyện tập các
-khái niệm đồ họa cốt lõi như biến đổi hình học, camera và phép chiếu, ánh sáng,
-chế độ hiển thị, và tải mô hình 3D.
+Nature Explorer là một game khám phá 3D được xây dựng bằng Three.js cho môn
+Computer Graphics (CS105). Người chơi sẽ điều khiển thỏ thám tử, khám phá khu
+rừng, lần theo gợi ý, thu thập 5 bảo vật và hoàn thành thử thách trong giới hạn
+thời gian.
 
-## 1. Giới thiệu dự án
+## Thông tin môn học
 
-- Bối cảnh môn học: bài tập/đồ án môn Computer Graphics.
-- Mục tiêu dự án: xây dựng một scene Three.js có cấu trúc rõ ràng, có thể phát
-  triển thành một trò chơi khám phá hoàn chỉnh.
-- Trọng tâm hiện tại:
-  - Nền tảng scene và camera
-  - Ánh sáng và bóng đổ
-  - Thử nghiệm các chế độ hiển thị (solid, wireframe, points)
-  - Kết hợp các hình học cơ bản
-  - Tạo pipeline tải mô hình ngoài (.glb)
+- **Môn học:** Đồ họa máy tính (Computer Graphics)
+- **Mã học phần:** CS105
+- **Mã lớp:** CS105.Q21
+- **Học kì:** HK2 (2025 - 2026)
+- **GVHD**: ThS. Cáp Phạm Đình Thăng
 
-## 2. Hướng dẫn cài đặt
+## Giới thiệu dự án
+
+Dự án hiện tại đã hoàn thiện một vòng chơi cơ bản gồm:
+
+- Màn hình intro, phần cốt truyện, hệ thống gợi ý.
+- Điều khiển người chơi bằng bàn phím, camera bám theo nhân vật.
+- Hệ thống spawn vật phẩm theo đúng thứ tự.
+- Va chạm với vật phẩm và vật cản.
+- Âm thanh nền, hiệu ứng nhặt đồ, nhạc thắng/thua.
+- Môi trường rừng được dựng bằng model, ground, mist và ánh sáng.
+
+## Hướng dẫn cài đặt
 
 ### Clone repository
 
@@ -42,130 +48,56 @@ npm run dev
 Sau đó mở đường dẫn Vite hiển thị trong terminal (thường là
 http://localhost:5173).
 
-## 3. Cấu trúc dự án
+## Cấu trúc repo
 
 ```text
 .
-├── assets/
-│   └── models/                     # các file .glb và mô hình ngoài
-├── src/
-│   ├── core/
-│   │   ├── camera.js               # camera phối cảnh + cập nhật thông số chiếu
-│   │   ├── lighting.js             # ánh sáng ambient + directional và bóng đổ
-│   │   ├── renderer.js             # WebGL renderer và cấu hình shadow map
-│   │   ├── resize.js               # xử lý thay đổi kích thước màn hình
-│   │   └── scene.js                # khởi tạo scene (background, fog)
-│   ├── environment/
-│   │   └── geometries.js           # mặt đất + vật thể cơ bản + các biến thể hiển thị
-│   ├── gameplay/
-│   │   ├── modelLoader.js          # khung tải GLB qua GLTFLoader
-│   │   └── transformController.js  # điều khiển biến đổi bằng bàn phím
-│   ├── ui/
-│   │   └── renderModeController.js # chuyển chế độ + HUD
-│   ├── main.js                     # ghép nối app + vòng lặp render
-│   └── styles.css                  # style cơ bản + style HUD
 ├── index.html
 ├── package.json
-└── README.md
+├── README.md
+├── assets/
+│   ├── audio/
+│   ├── models/
+│   └── texture/
+└── src/
+    ├── main.js
+    ├── styles.css
+    ├── core/
+    ├── environment/
+    ├── gameplay/
+    └── ui/
 ```
 
-Phân chia trách nhiệm thư mục:
+## Phân chia module
 
-- `src/core`: thiết lập mức engine (scene, renderer, camera, lighting).
-- `src/environment`: dựng thế giới và các đối tượng hình học cho bối cảnh
-  rừng/game.
-- `src/gameplay`: các hệ thống phục vụ gameplay (di chuyển, tương tác, tải dữ
-  liệu).
-- `src/ui`: giao diện và các lớp phủ điều khiển/debug.
-- `assets`: mô hình, texture và tài nguyên ngoài.
+- `src/core`: scene, renderer, camera, lighting, resize handling.
+- `src/environment`: địa hình, fog, vị trí vật thể và ghép cảnh rừng.
+- `src/gameplay`: di chuyển người chơi, trạng thái vật phẩm, spawn, va chạm, âm
+  thanh và tải model.
+- `src/ui`: overlay, HUD, settings drawer, hint modal và menu flow.
+- `assets`: audio, texture và các model GLB sử dụng trong game.
 
-## 4. Phân công nhiệm vụ nhóm
+## Điều Khiển
 
-| Tên thành viên | MSSV | Github | Nhiệm vụ, vai trò                                                                                                                    |
-| -------------- | ---- | ------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Thành viên A   | -    | -      | Graphics Core: Hệ thống camera (FOV, near/far, điều khiển camera); ánh sáng và bóng đổ; pipeline render và vòng lặp animation        |
-| Thành viên B   | -    | -      | Environment & Assets: Dựng địa hình và bố cục khu rừng; tích hợp mô hình và texture; tinh chỉnh material để tăng chất lượng hình ảnh |
-| Thành viên C   | -    | -      | Gameplay Logic: Hệ thống di chuyển người chơi; va chạm và thu thập vật phẩm; luật tiến trình trò chơi (điểm số/mục tiêu)             |
-| Thành viên D   | -    | -      | Interaction & UI: Ánh xạ input và key bindings; HUD/menu/thông báo phản hồi; gợi ý tương tác và hoàn thiện trải nghiệm               |
+- **Di chuyển:** `W` `A` `S` `D` hoặc các phím mũi tên
+- **Camera:** kéo chuột / cuộn chuột để xoay và zoom
+- **Tạm dừng:** `Esc`
+- **Bật/tắt nhạc:** `B`
 
-## 5. Quy trình phát triển
+## Tính năng chính
 
-### Chiến lược nhánh
+- Menu intro, luồng tải game, story modal và hint modal.
+- Nhiệm vụ thu thập bảo vật theo thứ tự, có đồng hồ đếm ngược và tính điểm.
+- Nhân vật có animation và âm thanh bước chân.
+- Spawn vật phẩm động và xử lý va chạm.
+- Cảnh rừng với lighting, mist, ground và model nhập ngoài.
+- Giao diện hiển thị tiến độ, thời gian, cài đặt và trạng thái game.
 
-- Tạo nhánh theo từng thành viên để dễ phân công và theo dõi tiến độ.
-- Ví dụ:
-  - `<ten-thanh-vien-a>/graphics-core`
-  - `<ten-thanh-vien-b>/environment-assets`
-  - `<ten-thanh-vien-c>/gameplay-logic`
-  - `<ten-thanh-vien-d>/interaction-ui`
+## Phân công thành viên
 
-### Pull request
-
-- Tạo PR từ nhánh feature vào nhánh main.
-- Yêu cầu ít nhất một thành viên khác review trước khi merge.
-- Giữ phạm vi PR gọn, chỉ tập trung vào một tính năng hoặc một lỗi.
-- Mô tả rõ ràng feature hoặc những thay đổi đã thực hiện và lý do (nếu cần).
-
-### Quy ước commit message
-
-Sử dụng tiền tố commit ngắn gọn, thống nhất:
-
-- `feat:` tính năng mới
-- `fix:` sửa lỗi
-- `refactor:` dọn code bên trong nhưng không đổi hành vi
-- `docs:` cập nhật README hoặc tài liệu
-- `style:` chỉ thay đổi định dạng
-
-Ví dụ commit message:
-
-- `feat: add directional sunlight with shadow camera bounds`
-- `feat: add render mode toggle for solid lines and points`
-- `fix: clamp camera near plane to avoid invalid projection`
-
-## 6. Các tính năng đã triển khai (ban đầu)
-
-- Thiết lập scene với fog và không khí giống khu rừng.
-- Hệ thống camera phối cảnh với FOV, near và far có thể điều chỉnh.
-- Hệ thống ánh sáng:
-  - Ambient light
-  - Directional sunlight
-  - Cấu hình shadow map
-- Các hình học cơ bản:
-  - Box
-  - Sphere
-  - Cone
-  - Cylinder
-  - Torus (hình bánh xe)
-- Chế độ hiển thị:
-  - Solid
-  - Lines (wireframe)
-  - Points
-- Khung điều khiển biến đổi bằng bàn phím (translate/rotate/scale đối tượng được
-  chọn).
-- Cấu trúc tải GLB với `GLTFLoader` sẵn sàng cho mô hình ngoài.
-
-## Các phím điều khiển tham khảo
-
-- Chế độ hiển thị:
-  - `1` = Solid
-  - `2` = Lines
-  - `3` = Points
-- Chọn đối tượng:
-  - `F1` đến `F6`
-  - `[` và `]` để chuyển qua lại
-- Biến đổi đối tượng được chọn:
-  - Di chuyển: phím mũi tên + PageUp/PageDown
-  - Xoay trục Y: `R` / `F`
-  - Phóng to/thu nhỏ: `+` / `-`
-- Điều chỉnh camera:
-  - Di chuyển: `I` `K` `J` `L` `U` `O`
-  - Near: `N` / `M`
-  - Far: `,` / `.`
-  - FOV: `Z` / `X`
-
-## Các bước phát triển tiếp theo được đề xuất
-
-1. Thêm bộ điều khiển người chơi và vùng va chạm.
-2. Thay các hình học cơ bản bằng asset GLB cho cây, đá, vật phẩm.
-3. Thêm hệ thống thu thập vật phẩm và bảng mục tiêu trên màn hình.
-4. Thêm chu kỳ ngày/đêm và hiệu ứng môi trường.
+| Tên thành viên      | MSSV     | Github                                                     | Nhiệm vụ, vai trò                                                        |
+| ------------------- | -------- | ---------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Lê Ngọc Phương Thảo | 23521467 | [@lngphgthao](https://github.com/lngphgthao)               | Graphics Core: Camera, ánh sáng, renderer, resize, vòng lặp render       |
+| Đinh Hoàng Phúc     | 23521193 | [@DinhHoangPhuc3010](https://github.com/DinhHoangPhuc3010) | Environment & Assets: Dựng rừng, ground, mist, vị trí model, texture     |
+| Mai Lê Bá Vương     | 23521821 | [@bavuong2005](https://github.com/bavuong2005)             | Gameplay Logic: Người chơi, collision, spawn, game state, audio          |
+| Trần Thị Cẩm Tú     | 23521704 | [@TuTTC](https://github.com/TuTTC)                         | Interaction & UI: HUD, modal, settings, luồng gợi ý, phản hồi người dùng |
