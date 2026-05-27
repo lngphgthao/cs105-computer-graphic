@@ -145,13 +145,17 @@ export function updatePlayer(delta, camera) {
 		);
 
 		// --- XOAY NHÂN VẬT THEO HƯỚNG DI CHUYỂN (MƯỢT MÀ) ---
-		// Do thỏ được tải xoay lưng về camera (Math.PI), ta cộng thêm Math.PI vào hướng di chuyển
+		// atan2(x, z) cho hướng di chuyển trong world space.
+		// Model thỏ được load xoay Math.PI (lưng về +Z) nên ta KHÔNG cộng thêm offset.
+		// Group player.rotation.y = 0 + atan2 sẽ khiến mặt thỏ quay đúng hướng di chuyển.
 		const targetAngle = Math.atan2(_moveDir.x, _moveDir.z) + Math.PI;
 
 		let angleDiff = targetAngle - player.rotation.y;
 		// Chuẩn hóa góc chênh lệch trong khoảng [-PI, PI] để xoay theo hướng ngắn nhất
 		angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
-		player.rotation.y += angleDiff * 15 * delta;
+		// Clamp lerp factor để tránh overshooting khi delta lớn
+		const lerpFactor = Math.min(10 * delta, 1);
+		player.rotation.y += angleDiff * lerpFactor;
 
 		// --- CHUYỂN SANG HOẠT ẢNH CHẠY ---
 		const runClipName = Object.keys(playerActions).find(
@@ -162,11 +166,11 @@ export function updatePlayer(delta, camera) {
 		}
 		// Khóa trục Y ở vị trí mặt đất (0)
 		player.position.y = 0;
+	}
 
-		// Cập nhật AnimationMixer
-		if (playerMixer) {
-			playerMixer.update(delta);
-		}
+	// Luôn cập nhật AnimationMixer (cả khi đứng yên để Idle animation chạy)
+	if (playerMixer) {
+		playerMixer.update(delta);
 	}
 }
 
