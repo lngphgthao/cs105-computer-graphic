@@ -36,7 +36,7 @@ export function initGameUI({
       <!-- Progress (Left) -->
       <div class="hud-tile hud-progress-container">
         <div class="hud-progress-label">
-          <span>Tiến Độ</span>
+          <span>Tiến độ</span>
           <span id="hud-progress-text">0 / 5</span>
         </div>
         <div class="hud-progress-bar-bg">
@@ -46,15 +46,15 @@ export function initGameUI({
 
       <!-- Timer (Center) -->
       <div class="hud-tile hud-timer-container">
-        <div class="hud-timer-label">Thời Gian</div>
+        <div class="hud-timer-label">Thời gian</div>
         <div class="hud-timer-value" id="hud-timer-value">05:00</div>
       </div>
 
       <!-- Quick Actions (Right) -->
       <div class="hud-actions">
-        <button class="hud-action-btn" id="btn-hud-help">Trợ Giúp</button>
-        <button class="hud-action-btn" id="btn-hud-hint">Gợi Ý</button>
-        <button class="hud-action-btn" id="btn-hud-settings">Cài Đặt</button>
+        <button class="hud-action-btn" id="btn-hud-help">Trợ giúp</button>
+        <button class="hud-action-btn" id="btn-hud-hint">Gợi ý</button>
+        <button class="hud-action-btn" id="btn-hud-settings">Cài đặt</button>
       </div>
     </div>
 
@@ -91,11 +91,11 @@ export function initGameUI({
       <!-- Top-right 'X' Close Button -->
       <button class="drawer-x-btn" id="btn-settings-close">&times;</button>
 
-      <div class="drawer-header">Cài Đặt</div>
+      <div class="drawer-header">Cài đặt</div>
 
       <div class="setting-row">
         <div class="setting-label-container">
-          <span class="setting-label">Âm Lượng Nhạc</span>
+          <span class="setting-label">Âm lượng nhạc</span>
           <button class="setting-toggle-btn" id="btn-mute-toggle">Bật</button>
         </div>
         <input type="range" min="0" max="1" step="0.01" value="0.2" class="setting-slider" id="slider-volume">
@@ -103,14 +103,14 @@ export function initGameUI({
 
       <div class="setting-row">
         <div class="setting-label-container">
-          <span class="setting-label">Sáng Môi Trường</span>
+          <span class="setting-label">Ánh sáng môi trường</span>
         </div>
         <input type="range" min="0" max="2" step="0.01" value="0.35" class="setting-slider" id="slider-ambient">
       </div>
 
       <div class="setting-row">
         <div class="setting-label-container">
-          <span class="setting-label">Sáng Mặt Trời</span>
+          <span class="setting-label">Ánh sáng mặt trời</span>
         </div>
         <input type="range" min="0" max="3" step="0.01" value="1.25" class="setting-slider" id="slider-sun">
       </div>
@@ -183,12 +183,12 @@ export function initGameUI({
               <div class="forest-mushroom mush-1"></div>
               <div class="forest-mushroom mush-2"></div>
               <div class="forest-mushroom mush-3"></div>
-              <div class="forest-caption">Khu Rừng Kỳ Bí</div>
+              <div class="forest-caption">Khu rừng Kỳ bí</div>
             </div>
           </div>
         </div>
 
-        <button class="game-btn-3d btn-green" id="btn-story-start">Bắt Đầu</button>
+        <button class="game-btn-3d btn-green" id="btn-story-start">Bắt đầu</button>
       </div>
     </div>
 
@@ -200,8 +200,8 @@ export function initGameUI({
         <div class="board-screw screw-bl"></div>
         <div class="board-screw screw-br"></div>
 
-        <div class="wax-badge">Manh Mối</div>
-        <h1 class="board-title" id="hint-title">Vật Phẩm #1</h1>
+        <div class="wax-badge">Manh mối</div>
+        <h1 class="board-title" id="hint-title">Vật phẩm #1</h1>
 
         <div class="modal-split-layout">
           <div class="modal-image-col">
@@ -226,7 +226,7 @@ export function initGameUI({
                 "Hãy tìm ở phía Tây Bắc khu rừng, gần một cụm nấm phát sáng lớn..."
               </p>
               <div class="hint-meaning-section">
-                <div class="hint-meaning-label">Ý Nghĩa Bảo Vật</div>
+                <div class="hint-meaning-label">Ý nghĩa bảo vật</div>
                 <p id="hint-meaning" class="hint-meaning-text">
                   Nấm Pha Lê chứa nguồn năng lượng phát quang cổ đại. Khi được đặt về đúng vị trí trên Cây Đại Thụ, nó sẽ thắp lại ánh sáng đom đóm đầu tiên cho khu rừng.
                 </p>
@@ -247,7 +247,7 @@ export function initGameUI({
         <div class="board-screw screw-bl"></div>
         <div class="board-screw screw-br"></div>
 
-        <div class="wax-badge">Chiến Thắng</div>
+        <div class="wax-badge">Chiến thắng</div>
         <h1 class="board-title">KỲ TÍCH!</h1>
 
         <div class="parchment-card">
@@ -256,17 +256,17 @@ export function initGameUI({
           
           <div class="stats-container">
             <div class="stat-item">
-              <span class="stat-label">Điểm Số</span>
+              <span class="stat-label">Điểm số</span>
               <span class="stat-value" id="won-score">500</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">Thời Gian Dùng</span>
+              <span class="stat-label">Thời gian dùng</span>
               <span class="stat-value" id="won-time">02:30</span>
             </div>
           </div>
         </div>
 
-        <button class="game-btn-3d btn-green" id="btn-won-replay">Chơi Lại</button>
+        <button class="game-btn-3d btn-green" id="btn-won-replay">Chơi lại</button>
       </div>
     </div>
 
@@ -278,7 +278,7 @@ export function initGameUI({
         <div class="board-screw screw-bl"></div>
         <div class="board-screw screw-br"></div>
 
-        <div class="wax-badge">Thất Bại</div>
+        <div class="wax-badge">Thất bại</div>
         <h1 class="board-title">HẾT GIỜ!</h1>
 
         <div class="parchment-card">
@@ -287,7 +287,7 @@ export function initGameUI({
           <p>Đừng nản lòng, hãy thử sức lại một lần nữa để giải cứu thế giới tự nhiên!</p>
         </div>
 
-        <button class="game-btn-3d btn-red" id="btn-lost-retry">Thử Lại</button>
+        <button class="game-btn-3d btn-red" id="btn-lost-retry">Thử lại</button>
       </div>
     </div>
 
@@ -299,7 +299,7 @@ export function initGameUI({
         <div class="board-screw screw-bl"></div>
         <div class="board-screw screw-br"></div>
 
-        <div class="wax-badge">Tạm Dừng</div>
+        <div class="wax-badge">Tạm dừng</div>
         <h1 class="board-title">PAUSED</h1>
 
         <div class="parchment-card">
@@ -308,8 +308,8 @@ export function initGameUI({
         </div>
 
         <div style="display: flex; gap: 16px; justify-content: center; margin-top: 20px;">
-          <button class="game-btn-3d btn-green" id="btn-pause-resume">Tiếp Tục</button>
-          <button class="game-btn-3d btn-red" id="btn-pause-quit">Thoát Game</button>
+          <button class="game-btn-3d btn-green" id="btn-pause-resume">Tiếp tục</button>
+          <button class="game-btn-3d btn-red" id="btn-pause-quit">Thoát game</button>
         </div>
       </div>
     </div>
@@ -473,8 +473,6 @@ export function initGameUI({
 			updateVolume(preMuteVolume);
 		}
 	});
-
-	// Footstep audio removed; no UI control.
 
 	// Ambient Light
 	sliderAmbient.addEventListener("input", (e) => {
@@ -690,7 +688,7 @@ export function initGameUI({
 		activeMeaning = e.detail.meaning || "";
 
 		// Automatically popup hint on new item to keep player guided
-		hintTitle.textContent = `Vật Phẩm #${activeItemNumber}`;
+		hintTitle.textContent = `Vật phẩm #${activeItemNumber}`;
 		hintSubtitle.textContent = `Đang tìm kiếm: ${activeItemName}`;
 		hintText.textContent = `"${activeHint}"`;
 		hintMeaning.textContent = activeMeaning;
