@@ -77,7 +77,7 @@ http://localhost:5173).
 - `src/ui`: overlay, HUD, settings drawer, hint modal và menu flow.
 - `assets`: audio, texture và các model GLB sử dụng trong game.
 
-## Điều Khiển
+## Điều khiển
 
 - **Di chuyển:** `W` `A` `S` `D` hoặc các phím mũi tên
 - **Camera:** kéo chuột / cuộn chuột để xoay và zoom

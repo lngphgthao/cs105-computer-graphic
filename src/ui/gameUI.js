@@ -1,34 +1,36 @@
 import "./gameUI.css";
 import { getPlayer } from "../gameplay/playerController";
+import { setPaused } from "../gameplay/gameState";
 
 export function initGameUI({
-  renderer,
-  scene,
-  backgroundMusic,
-  introMusic,
-  winMusic,
-  loseMusic,
-  ambientLight,
-  sunlight,
-  onStartGame,
-  onPauseGame,
-  onResumeGame,
-  onQuitGame,
+	renderer,
+	scene,
+	backgroundMusic,
+	introMusic,
+	winMusic,
+	loseMusic,
+	ambientLight,
+	sunlight,
+	onStartGame,
+	onPauseGame,
+	onResumeGame,
+	onQuitGame,
 }) {
-  let isMuted = false;
-  let preMuteVolume = 0.2;
-  let activeHint = "Hãy tìm ở phía Tây Bắc khu rừng, gần một cụm nấm phát sáng lớn...";
-  let activeItemName = "Nấm Pha Lê (Crystal Mushroom)";
-  let activeItemNumber = 1;
+	let isMuted = false;
+	let preMuteVolume = 0.2;
+	let activeHint =
+		"Hãy tìm ở phía Tây Bắc khu rừng, gần một cụm nấm phát sáng lớn...";
+	let activeItemName = "Nấm Pha Lê (Crystal Mushroom)";
+	let activeItemNumber = 1;
 
-  // Create root element for UI
-  const root = document.createElement("div");
-  root.id = "game-ui-root";
-  root.className = "game-ui-container";
-  document.body.appendChild(root);
+	// Create root element for UI
+	const root = document.createElement("div");
+	root.id = "game-ui-root";
+	root.className = "game-ui-container";
+	document.body.appendChild(root);
 
-  // Generate HTML structure dynamically
-  root.innerHTML = `
+	// Generate HTML structure dynamically
+	root.innerHTML = `
     <!-- HUD Layer -->
     <div class="game-hud" id="game-hud">
       <!-- Progress (Left) -->
@@ -332,460 +334,501 @@ export function initGameUI({
     </div>
   `;
 
-  // Bind DOM Elements
-  const modalIntroOverlay = root.querySelector("#modal-intro-overlay");
-  const modalStoryOverlay = root.querySelector("#modal-story-overlay");
-  const modalHintOverlay = root.querySelector("#modal-hint-overlay");
-  const modalWonOverlay = root.querySelector("#modal-won-overlay");
-  const modalLostOverlay = root.querySelector("#modal-lost-overlay");
-  const modalPauseOverlay = root.querySelector("#modal-pause-overlay");
-  const loadingOverlay = root.querySelector("#loading-overlay");
+	// Bind DOM Elements
+	const modalIntroOverlay = root.querySelector("#modal-intro-overlay");
+	const modalStoryOverlay = root.querySelector("#modal-story-overlay");
+	const modalHintOverlay = root.querySelector("#modal-hint-overlay");
+	const modalWonOverlay = root.querySelector("#modal-won-overlay");
+	const modalLostOverlay = root.querySelector("#modal-lost-overlay");
+	const modalPauseOverlay = root.querySelector("#modal-pause-overlay");
+	const loadingOverlay = root.querySelector("#loading-overlay");
 
-  const btnStoryStart = root.querySelector("#btn-story-start");
-  const btnIntroPlay = root.querySelector("#btn-intro-play");
-  const btnHintClose = root.querySelector("#btn-hint-close");
-  const btnWonReplay = root.querySelector("#btn-won-replay");
-  const btnLostRetry = root.querySelector("#btn-lost-retry");
-  const btnPauseResume = root.querySelector("#btn-pause-resume");
-  const btnPauseQuit = root.querySelector("#btn-pause-quit");
+	const btnStoryStart = root.querySelector("#btn-story-start");
+	const btnIntroPlay = root.querySelector("#btn-intro-play");
+	const btnHintClose = root.querySelector("#btn-hint-close");
+	const btnWonReplay = root.querySelector("#btn-won-replay");
+	const btnLostRetry = root.querySelector("#btn-lost-retry");
+	const btnPauseResume = root.querySelector("#btn-pause-resume");
+	const btnPauseQuit = root.querySelector("#btn-pause-quit");
 
-  const loadingText = root.querySelector("#loading-text");
-  const loadingBarFill = root.querySelector("#loading-bar-fill");
-  const compassDisc = root.querySelector("#hud-compass-disc");
+	const loadingText = root.querySelector("#loading-text");
+	const loadingBarFill = root.querySelector("#loading-bar-fill");
+	const compassDisc = root.querySelector("#hud-compass-disc");
 
-  const btnHudHelp = root.querySelector("#btn-hud-help");
-  const hudHelpCard = root.querySelector("#hud-help-card");
-  const btnHudHint = root.querySelector("#btn-hud-hint");
-  const btnHudSettings = root.querySelector("#btn-hud-settings");
+	const btnHudHelp = root.querySelector("#btn-hud-help");
+	const hudHelpCard = root.querySelector("#hud-help-card");
+	const btnHudHint = root.querySelector("#btn-hud-hint");
+	const btnHudSettings = root.querySelector("#btn-hud-settings");
 
-  const settingsDrawer = root.querySelector("#settings-drawer");
-  const settingsBackdrop = root.querySelector("#settings-backdrop");
-  const btnSettingsClose = root.querySelector("#btn-settings-close");
+	const settingsDrawer = root.querySelector("#settings-drawer");
+	const settingsBackdrop = root.querySelector("#settings-backdrop");
+	const btnSettingsClose = root.querySelector("#btn-settings-close");
 
-  const sliderVolume = root.querySelector("#slider-volume");
-  const btnMuteToggle = root.querySelector("#btn-mute-toggle");
-  
-  const sliderFootstep = root.querySelector("#slider-footstep");
-  const sliderAmbient = root.querySelector("#slider-ambient");
-  const sliderSun = root.querySelector("#slider-sun");
+	const sliderVolume = root.querySelector("#slider-volume");
+	const btnMuteToggle = root.querySelector("#btn-mute-toggle");
 
-  const hudProgressText = root.querySelector("#hud-progress-text");
-  const hudProgressFill = root.querySelector("#hud-progress-fill");
-  const hudTimerValue = root.querySelector("#hud-timer-value");
+	const sliderFootstep = root.querySelector("#slider-footstep");
+	const sliderAmbient = root.querySelector("#slider-ambient");
+	const sliderSun = root.querySelector("#slider-sun");
 
-  const hintTitle = root.querySelector("#hint-title");
-  const hintSubtitle = root.querySelector("#hint-subtitle");
-  const hintText = root.querySelector("#hint-text");
-  const hintMeaning = root.querySelector("#hint-meaning");
-  const hintItemScene = root.querySelector("#hint-item-scene");
-  const hintItemIcon = root.querySelector("#hint-item-icon");
+	const hudProgressText = root.querySelector("#hud-progress-text");
+	const hudProgressFill = root.querySelector("#hud-progress-fill");
+	const hudTimerValue = root.querySelector("#hud-timer-value");
 
-  let activeMeaning = "";
+	const hintTitle = root.querySelector("#hint-title");
+	const hintSubtitle = root.querySelector("#hint-subtitle");
+	const hintText = root.querySelector("#hint-text");
+	const hintMeaning = root.querySelector("#hint-meaning");
+	const hintItemScene = root.querySelector("#hint-item-scene");
+	const hintItemIcon = root.querySelector("#hint-item-icon");
 
-  const wonScore = root.querySelector("#won-score");
-  const wonTime = root.querySelector("#won-time");
+	let activeMeaning = "";
 
-  // Item CSS art color/shape configurations
-  const ITEM_VISUALS = {
-    1: { cssClass: "item-mushroom", color: "#ff69b4", glow: "rgba(255,105,180,0.4)" },
-    2: { cssClass: "item-teapot",   color: "#ffd700", glow: "rgba(255,215,0,0.4)" },
-    3: { cssClass: "item-wheel",    color: "#cd853f", glow: "rgba(205,133,63,0.4)" },
-    4: { cssClass: "item-chest",    color: "#daa520", glow: "rgba(218,165,32,0.4)" },
-    5: { cssClass: "item-gem",      color: "#50c878", glow: "rgba(80,200,120,0.4)" },
-  };
+	const wonScore = root.querySelector("#won-score");
+	const wonTime = root.querySelector("#won-time");
 
-  function updateHintVisual(itemNumber) {
-    const visual = ITEM_VISUALS[itemNumber] || ITEM_VISUALS[1];
-    // Reset classes
-    hintItemIcon.className = "item-icon " + visual.cssClass;
-    hintItemScene.style.background = `radial-gradient(ellipse at center, ${visual.glow} 0%, rgba(20,15,10,0.95) 70%)`;
-  }
+	// Item CSS art color/shape configurations
+	const ITEM_VISUALS = {
+		1: {
+			cssClass: "item-mushroom",
+			color: "#ff69b4",
+			glow: "rgba(255,105,180,0.4)",
+		},
+		2: {
+			cssClass: "item-teapot",
+			color: "#ffd700",
+			glow: "rgba(255,215,0,0.4)",
+		},
+		3: {
+			cssClass: "item-wheel",
+			color: "#cd853f",
+			glow: "rgba(205,133,63,0.4)",
+		},
+		4: {
+			cssClass: "item-chest",
+			color: "#daa520",
+			glow: "rgba(218,165,32,0.4)",
+		},
+		5: { cssClass: "item-gem", color: "#50c878", glow: "rgba(80,200,120,0.4)" },
+	};
 
-  // ==========================================
-  // HELPER FUNCTIONS
-  // ==========================================
-  
-  function formatTime(totalSeconds) {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-  }
+	function updateHintVisual(itemNumber) {
+		const visual = ITEM_VISUALS[itemNumber] || ITEM_VISUALS[1];
+		// Reset classes
+		hintItemIcon.className = "item-icon " + visual.cssClass;
+		hintItemScene.style.background = `radial-gradient(ellipse at center, ${visual.glow} 0%, rgba(20,15,10,0.95) 70%)`;
+	}
 
-  function updateVolume(vol) {
-    const updateAudio = (audioObj) => {
-      if (audioObj) {
-        try {
-          audioObj.setVolume(vol);
-        } catch (err) { }
-      }
-    };
-    updateAudio(backgroundMusic);
-    updateAudio(introMusic);
-    updateAudio(winMusic);
-    updateAudio(loseMusic);
-  }
+	// ==========================================
+	// HELPER FUNCTIONS
+	// ==========================================
 
-  // ==========================================
-  // EVENT LISTENERS: AUDIO & LIGHTING CONTROLS
-  // ==========================================
+	function formatTime(totalSeconds) {
+		const mins = Math.floor(totalSeconds / 60);
+		const secs = totalSeconds % 60;
+		return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+	}
 
-  // Music Volume
-  sliderVolume.addEventListener("input", (e) => {
-    const vol = parseFloat(e.target.value);
-    preMuteVolume = vol;
-    
-    if (vol === 0) {
-      isMuted = true;
-      btnMuteToggle.textContent = "Tắt";
-      btnMuteToggle.style.background = "#ebdcc5";
-    } else {
-      isMuted = false;
-      btnMuteToggle.textContent = "Bật";
-      btnMuteToggle.style.background = "#fbf0db";
-    }
-    
-    updateVolume(vol);
-  });
+	function updateVolume(vol) {
+		const updateAudio = (audioObj) => {
+			if (audioObj) {
+				try {
+					audioObj.setVolume(vol);
+				} catch (err) {}
+			}
+		};
+		updateAudio(backgroundMusic);
+		updateAudio(introMusic);
+		updateAudio(winMusic);
+		updateAudio(loseMusic);
+	}
 
-  // Mute toggle
-  btnMuteToggle.addEventListener("click", () => {
-    isMuted = !isMuted;
-    if (isMuted) {
-      preMuteVolume = parseFloat(sliderVolume.value) || 0.2;
-      sliderVolume.value = 0;
-      btnMuteToggle.textContent = "Tắt";
-      btnMuteToggle.style.background = "#ebdcc5";
-      updateVolume(0);
-    } else {
-      sliderVolume.value = preMuteVolume;
-      btnMuteToggle.textContent = "Bật";
-      btnMuteToggle.style.background = "#fbf0db";
-      updateVolume(preMuteVolume);
-    }
-  });
+	// ==========================================
+	// EVENT LISTENERS: AUDIO & LIGHTING CONTROLS
+	// ==========================================
 
-  // Footstep Volume
-  sliderFootstep.addEventListener("input", (e) => {
-    const v = parseFloat(e.target.value);
-    const player = getPlayer();
-    if (player && player.userData && player.userData.footstep) {
-      try {
-        player.userData.footstep.setVolume(v);
-      } catch (err) { }
-    } else if (player) {
-      player.userData._desiredFootstepVol = v;
-    }
-  });
+	// Music Volume
+	sliderVolume.addEventListener("input", (e) => {
+		const vol = parseFloat(e.target.value);
+		preMuteVolume = vol;
 
-  // Ambient Light
-  sliderAmbient.addEventListener("input", (e) => {
-    const v = parseFloat(e.target.value);
-    if (ambientLight) ambientLight.intensity = v;
-  });
+		if (vol === 0) {
+			isMuted = true;
+			btnMuteToggle.textContent = "Tắt";
+			btnMuteToggle.style.background = "#ebdcc5";
+		} else {
+			isMuted = false;
+			btnMuteToggle.textContent = "Bật";
+			btnMuteToggle.style.background = "#fbf0db";
+		}
 
-  // Sun Light
-  sliderSun.addEventListener("input", (e) => {
-    const v = parseFloat(e.target.value);
-    if (sunlight) sunlight.intensity = v;
-  });
+		updateVolume(vol);
+	});
 
-  // ==========================================
-  // DRAWER EVENTS
-  // ==========================================
-  
-  function openDrawer() {
-    settingsDrawer.classList.add("active");
-    settingsBackdrop.classList.add("active");
-    if (onPauseGame) onPauseGame();
-  }
+	// Mute toggle
+	btnMuteToggle.addEventListener("click", () => {
+		isMuted = !isMuted;
+		if (isMuted) {
+			preMuteVolume = parseFloat(sliderVolume.value) || 0.2;
+			sliderVolume.value = 0;
+			btnMuteToggle.textContent = "Tắt";
+			btnMuteToggle.style.background = "#ebdcc5";
+			updateVolume(0);
+		} else {
+			sliderVolume.value = preMuteVolume;
+			btnMuteToggle.textContent = "Bật";
+			btnMuteToggle.style.background = "#fbf0db";
+			updateVolume(preMuteVolume);
+		}
+	});
 
-  function closeDrawer() {
-    settingsDrawer.classList.remove("active");
-    settingsBackdrop.classList.remove("active");
-    if (onResumeGame) onResumeGame();
-  }
+	// Footstep Volume
+	sliderFootstep.addEventListener("input", (e) => {
+		const v = parseFloat(e.target.value);
+		const player = getPlayer();
+		if (player && player.userData && player.userData.footstep) {
+			try {
+				player.userData.footstep.setVolume(v);
+			} catch (err) {}
+		} else if (player) {
+			player.userData._desiredFootstepVol = v;
+		}
+	});
 
-  btnHudSettings.addEventListener("click", openDrawer);
-  btnSettingsClose.addEventListener("click", closeDrawer);
-  settingsBackdrop.addEventListener("click", closeDrawer);
+	// Ambient Light
+	sliderAmbient.addEventListener("input", (e) => {
+		const v = parseFloat(e.target.value);
+		if (ambientLight) ambientLight.intensity = v;
+	});
 
-  // ==========================================
-  // GAMEPLAY OVERLAYS / MODALS EVENTS
-  // ==========================================
+	// Sun Light
+	sliderSun.addEventListener("input", (e) => {
+		const v = parseFloat(e.target.value);
+		if (sunlight) sunlight.intensity = v;
+	});
 
-  // Play intro music on very first click anywhere on the document
-  const playIntroOnInteraction = () => {
-    if (introMusic && !introMusic.isPlaying && modalIntroOverlay.classList.contains("active")) {
-      try {
-        if (introMusic.context && introMusic.context.state === 'suspended') introMusic.context.resume();
-        introMusic.play();
-      } catch (err) {}
-    }
-    document.removeEventListener("click", playIntroOnInteraction);
-  };
-  document.addEventListener("click", playIntroOnInteraction);
+	// ==========================================
+	// DRAWER EVENTS
+	// ==========================================
 
-  // Intro Play button -> Trigger Phase 2 loading
-  btnIntroPlay.addEventListener("click", () => {
-    modalIntroOverlay.classList.remove("active");
-    loadingOverlay.classList.add("active");
-    loadingText.textContent = "Đang kiến tạo thế giới 3D... 0%";
-    loadingBarFill.style.width = "0%";
-    
-    // Play intro music now that user has interacted
-    if (introMusic) {
-      try {
-        if (introMusic.context && introMusic.context.state === 'suspended') introMusic.context.resume();
-        if (!introMusic.isPlaying) introMusic.play();
-      } catch (err) {
-        console.warn("Intro music autoplay blocked:", err);
-      }
-    }
+	function openDrawer() {
+		settingsDrawer.classList.add("active");
+		settingsBackdrop.classList.add("active");
+		if (onPauseGame) onPauseGame();
+	}
 
-    document.dispatchEvent(new CustomEvent("startPhase2Loading"));
-  });
+	function closeDrawer() {
+		settingsDrawer.classList.remove("active");
+		settingsBackdrop.classList.remove("active");
+		if (onResumeGame) onResumeGame();
+	}
 
-  // Start story button -> Start Game
-  btnStoryStart.addEventListener("click", () => {
-    modalStoryOverlay.classList.remove("active");
-    
-    // NOTE: Removed requestPointerLock here to prevent race condition with the first hint popup.
-    // Pointer lock will be requested when the user clicks 'Đã Hiểu' on the hint modal.
+	btnHudSettings.addEventListener("click", openDrawer);
+	btnSettingsClose.addEventListener("click", closeDrawer);
+	settingsBackdrop.addEventListener("click", closeDrawer);
 
-    // Stop intro music and start background music
-    if (introMusic && introMusic.isPlaying) introMusic.stop();
-    if (backgroundMusic) {
-      try {
-        if (backgroundMusic.context && backgroundMusic.context.state === 'suspended') {
-          backgroundMusic.context.resume();
-        }
-        if (backgroundMusic.buffer && !backgroundMusic.isPlaying) {
-          backgroundMusic.play();
-        }
-      } catch (err) {
-        console.warn("Background music autoplay was blocked/failed:", err);
-      }
-    }
-    if (onStartGame) {
-      onStartGame();
-    }
-  });
+	// ==========================================
+	// GAMEPLAY OVERLAYS / MODALS EVENTS
+	// ==========================================
 
-  // Help button toggles the on-screen controls help card
-  btnHudHelp.addEventListener("click", () => {
-    hudHelpCard.classList.toggle("hidden");
-  });
+	// Play intro music on very first click anywhere on the document
+	const playIntroOnInteraction = () => {
+		if (
+			introMusic &&
+			!introMusic.isPlaying &&
+			modalIntroOverlay.classList.contains("active")
+		) {
+			try {
+				if (introMusic.context && introMusic.context.state === "suspended")
+					introMusic.context.resume();
+				introMusic.play();
+			} catch (err) {}
+		}
+		document.removeEventListener("click", playIntroOnInteraction);
+	};
+	document.addEventListener("click", playIntroOnInteraction);
 
-  // Hint button triggers modal
-  btnHudHint.addEventListener("click", () => {
-    hintTitle.textContent = `Vật Phẩm #${activeItemNumber}`;
-    hintSubtitle.textContent = `Đang tìm kiếm: ${activeItemName}`;
-    hintText.textContent = `"${activeHint}"`;
-    hintMeaning.textContent = activeMeaning;
-    updateHintVisual(activeItemNumber);
-    modalHintOverlay.classList.add("active");
-    if (onPauseGame) onPauseGame();
-  });
+	// Intro Play button -> Trigger Phase 2 loading
+	btnIntroPlay.addEventListener("click", () => {
+		modalIntroOverlay.classList.remove("active");
+		loadingOverlay.classList.add("active");
+		loadingText.textContent = "Đang kiến tạo thế giới 3D... 0%";
+		loadingBarFill.style.width = "0%";
 
-  btnHintClose.addEventListener("click", () => {
-    modalHintOverlay.classList.remove("active");
-    if (onResumeGame) onResumeGame();
-    
-    // Auto-lock mouse when returning to game
-    if (renderer && renderer.domElement) {
-      renderer.domElement.requestPointerLock().catch(e => console.warn("Pointer lock blocked:", e));
-    }
-  });
+		// Play intro music now that user has interacted
+		if (introMusic) {
+			try {
+				if (introMusic.context && introMusic.context.state === "suspended")
+					introMusic.context.resume();
+				if (!introMusic.isPlaying) introMusic.play();
+			} catch (err) {
+				console.warn("Intro music autoplay blocked:", err);
+			}
+		}
 
-  // Replay & Retry buttons reload the page (safest restart logic)
-  btnWonReplay.addEventListener("click", () => {
-    window.location.reload();
-  });
+		document.dispatchEvent(new CustomEvent("startPhase2Loading"));
+	});
 
-  btnLostRetry.addEventListener("click", () => {
-    window.location.reload();
-  });
+	// Start story button -> Start Game
+	btnStoryStart.addEventListener("click", () => {
+		modalStoryOverlay.classList.remove("active");
 
-  btnPauseResume.addEventListener("click", () => {
-    setPaused(false);
-    if (renderer && renderer.domElement) {
-      renderer.domElement.requestPointerLock().catch(e => console.warn("Pointer lock blocked:", e));
-    }
-  });
+		// NOTE: Removed requestPointerLock here to prevent race condition with the first hint popup.
+		// Pointer lock will be requested when the user clicks 'Đã Hiểu' on the hint modal.
 
-  btnPauseQuit.addEventListener("click", () => {
-    // Stop all gameplay music
-    if (backgroundMusic && backgroundMusic.isPlaying) backgroundMusic.stop();
-    if (introMusic && !introMusic.isPlaying) {
-      try { introMusic.play(); } catch(e) {}
-    }
+		// Stop intro music and start background music
+		if (introMusic && introMusic.isPlaying) introMusic.stop();
+		if (backgroundMusic) {
+			try {
+				if (
+					backgroundMusic.context &&
+					backgroundMusic.context.state === "suspended"
+				) {
+					backgroundMusic.context.resume();
+				}
+				if (backgroundMusic.buffer && !backgroundMusic.isPlaying) {
+					backgroundMusic.play();
+				}
+			} catch (err) {
+				console.warn("Background music autoplay was blocked/failed:", err);
+			}
+		}
+		if (onStartGame) {
+			onStartGame();
+		}
+	});
 
-    // Exit pointer lock if active
-    if (document.pointerLockElement) {
-      document.exitPointerLock();
-    }
+	// Help button toggles the on-screen controls help card
+	btnHudHelp.addEventListener("click", () => {
+		hudHelpCard.classList.toggle("hidden");
+	});
 
-    // Hide pause modal and other overlays
-    modalPauseOverlay.classList.remove("active");
-    modalStoryOverlay.classList.remove("active");
-    modalHintOverlay.classList.remove("active");
-    hudHelpCard.classList.add("hidden");
-    modalWonOverlay.classList.remove("active");
-    modalLostOverlay.classList.remove("active");
-    loadingOverlay.classList.remove("active");
+	// Hint button triggers modal
+	btnHudHint.addEventListener("click", () => {
+		hintTitle.textContent = `Vật Phẩm #${activeItemNumber}`;
+		hintSubtitle.textContent = `Đang tìm kiếm: ${activeItemName}`;
+		hintText.textContent = `"${activeHint}"`;
+		hintMeaning.textContent = activeMeaning;
+		updateHintVisual(activeItemNumber);
+		modalHintOverlay.classList.add("active");
+		if (onPauseGame) onPauseGame();
+	});
 
-    // Reset HUD visual state
-    hudProgressText.textContent = "0 / 5";
-    hudProgressFill.style.width = "0%";
-    hudTimerValue.textContent = "05:00";
-    hudTimerValue.className = "hud-timer-value";
+	btnHintClose.addEventListener("click", () => {
+		modalHintOverlay.classList.remove("active");
+		if (onResumeGame) onResumeGame();
 
-    // Show Intro Screen
-    modalIntroOverlay.classList.add("active");
+		// Auto-lock mouse when returning to game
+		if (renderer && renderer.domElement) {
+			renderer.domElement
+				.requestPointerLock()
+				.catch((e) => console.warn("Pointer lock blocked:", e));
+		}
+	});
 
-    // Call quit callback to reset gameplay logic and position
-    if (onQuitGame) {
-      onQuitGame();
-    }
-  });
+	// Replay & Retry buttons reload the page (safest restart logic)
+	btnWonReplay.addEventListener("click", () => {
+		window.location.reload();
+	});
 
-  // ==========================================
-  // CUSTOM DOCUMENT EVENTS (INTEGRATING WITH GAMEPLAY EVENTS)
-  // ==========================================
+	btnLostRetry.addEventListener("click", () => {
+		window.location.reload();
+	});
 
-  // 1. Time Updated
-  document.addEventListener("timeUpdated", (e) => {
-    const timeRemaining = e.detail.timeRemaining;
-    hudTimerValue.textContent = formatTime(timeRemaining);
+	btnPauseResume.addEventListener("click", () => {
+		setPaused(false);
+		if (renderer && renderer.domElement) {
+			renderer.domElement
+				.requestPointerLock()
+				.catch((e) => console.warn("Pointer lock blocked:", e));
+		}
+	});
 
-    // Apply color code styling based on urgency
-    if (timeRemaining > 120) {
-      hudTimerValue.className = "hud-timer-value";
-    } else if (timeRemaining > 60) {
-      hudTimerValue.className = "hud-timer-value warning";
-    } else {
-      hudTimerValue.className = "hud-timer-value danger";
-    }
-  });
+	btnPauseQuit.addEventListener("click", () => {
+		// Stop all gameplay music
+		if (backgroundMusic && backgroundMusic.isPlaying) backgroundMusic.stop();
+		if (introMusic && !introMusic.isPlaying) {
+			try {
+				introMusic.play();
+			} catch (e) {}
+		}
 
-  // 2. Hint Received (next item hint ready)
-  document.addEventListener("hintReceived", (e) => {
-    activeHint = e.detail.hint;
-    activeItemName = e.detail.itemName;
-    activeItemNumber = e.detail.itemNumber;
-    activeMeaning = e.detail.meaning || "";
-    
-    // Automatically popup hint on new item to keep player guided
-    hintTitle.textContent = `Vật Phẩm #${activeItemNumber}`;
-    hintSubtitle.textContent = `Đang tìm kiếm: ${activeItemName}`;
-    hintText.textContent = `"${activeHint}"`;
-    hintMeaning.textContent = activeMeaning;
-    updateHintVisual(activeItemNumber);
-    modalHintOverlay.classList.add("active");
-    
-    // Exit pointer lock so player can use the mouse to close the popup
-    if (document.pointerLockElement) {
-      document.exitPointerLock();
-    }
-    
-    if (onPauseGame) onPauseGame();
-  });
+		// Exit pointer lock if active
+		if (document.pointerLockElement) {
+			document.exitPointerLock();
+		}
 
-  // 3. Item Collected
-  document.addEventListener("itemCollected", (e) => {
-    const { collectedCount, totalCount } = e.detail;
-    
-    // Update progress HUD
-    hudProgressText.textContent = `${collectedCount} / ${totalCount}`;
-    const pct = (collectedCount / totalCount) * 100;
-    hudProgressFill.style.width = `${pct}%`;
-  });
+		// Hide pause modal and other overlays
+		modalPauseOverlay.classList.remove("active");
+		modalStoryOverlay.classList.remove("active");
+		modalHintOverlay.classList.remove("active");
+		hudHelpCard.classList.add("hidden");
+		modalWonOverlay.classList.remove("active");
+		modalLostOverlay.classList.remove("active");
+		loadingOverlay.classList.remove("active");
 
-  // 4. Game Won
-  document.addEventListener("gameWon", (e) => {
-    const { score, timeUsed } = e.detail;
-    wonScore.textContent = score;
-    wonTime.textContent = formatTime(Math.round(timeUsed));
-    modalWonOverlay.classList.add("active");
-    
-    if (backgroundMusic && backgroundMusic.isPlaying) backgroundMusic.stop();
-    if (winMusic) {
-      try { winMusic.play(); } catch(e) {}
-    }
+		// Reset HUD visual state
+		hudProgressText.textContent = "0 / 5";
+		hudProgressFill.style.width = "0%";
+		hudTimerValue.textContent = "05:00";
+		hudTimerValue.className = "hud-timer-value";
 
-    // Exit pointer lock
-    if (document.pointerLockElement) {
-      document.exitPointerLock();
-    }
-    
-    if (onPauseGame) onPauseGame();
-  });
+		// Show Intro Screen
+		modalIntroOverlay.classList.add("active");
 
-  // 5. Game Lost
-  document.addEventListener("gameLost", () => {
-    modalLostOverlay.classList.add("active");
-    
-    if (backgroundMusic && backgroundMusic.isPlaying) backgroundMusic.stop();
-    if (loseMusic) {
-      try { loseMusic.play(); } catch(e) {}
-    }
+		// Call quit callback to reset gameplay logic and position
+		if (onQuitGame) {
+			onQuitGame();
+		}
+	});
 
-    // Exit pointer lock
-    if (document.pointerLockElement) {
-      document.exitPointerLock();
-    }
-    
-    if (onPauseGame) onPauseGame();
-  });
+	// ==========================================
+	// CUSTOM DOCUMENT EVENTS (INTEGRATING WITH GAMEPLAY EVENTS)
+	// ==========================================
 
-  // 6. Game Paused / Resumed
-  document.addEventListener("gamePaused", () => {
-    modalPauseOverlay.classList.add("active");
-    
-    // Exit pointer lock
-    if (document.pointerLockElement) {
-      document.exitPointerLock();
-    }
-    
-    if (onPauseGame) onPauseGame();
-  });
+	// 1. Time Updated
+	document.addEventListener("timeUpdated", (e) => {
+		const timeRemaining = e.detail.timeRemaining;
+		hudTimerValue.textContent = formatTime(timeRemaining);
 
-  document.addEventListener("gameResumed", () => {
-    modalPauseOverlay.classList.remove("active");
-    if (onResumeGame) onResumeGame();
-  });
+		// Apply color code styling based on urgency
+		if (timeRemaining > 120) {
+			hudTimerValue.className = "hud-timer-value";
+		} else if (timeRemaining > 60) {
+			hudTimerValue.className = "hud-timer-value warning";
+		} else {
+			hudTimerValue.className = "hud-timer-value danger";
+		}
+	});
 
-  // 7. Loading Progress
-  document.addEventListener("loadingProgress", (e) => {
-    const pct = Math.floor(e.detail.percent);
-    loadingBarFill.style.width = `${pct}%`;
-    loadingText.textContent = `Đang tải tài nguyên... ${pct}%`;
-  });
+	// 2. Hint Received (next item hint ready)
+	document.addEventListener("hintReceived", (e) => {
+		activeHint = e.detail.hint;
+		activeItemName = e.detail.itemName;
+		activeItemNumber = e.detail.itemNumber;
+		activeMeaning = e.detail.meaning || "";
 
-  document.addEventListener("loadingComplete", (e) => {
-    loadingOverlay.classList.remove("active");
-    if (e.detail && e.detail.phase === 1) {
-      modalIntroOverlay.classList.add("active");
-    } else {
-      modalStoryOverlay.classList.add("active");
-    }
-  });
+		// Automatically popup hint on new item to keep player guided
+		hintTitle.textContent = `Vật Phẩm #${activeItemNumber}`;
+		hintSubtitle.textContent = `Đang tìm kiếm: ${activeItemName}`;
+		hintText.textContent = `"${activeHint}"`;
+		hintMeaning.textContent = activeMeaning;
+		updateHintVisual(activeItemNumber);
+		modalHintOverlay.classList.add("active");
 
-  // 8. Compass Rotation
-  document.addEventListener("cameraRotated", (e) => {
-    if (compassDisc) {
-      const angle = e.detail.angle;
-      compassDisc.style.transform = `rotate(${angle}deg)`;
-      
-      // Giữ cho các chữ N, E, S, W luôn đứng thẳng
-      const markers = compassDisc.querySelectorAll('.compass-marker');
-      markers.forEach(marker => {
-        if (marker.classList.contains('compass-n') || marker.classList.contains('compass-s')) {
-          marker.style.transform = `translateX(-50%) rotate(${-angle}deg)`;
-        } else if (marker.classList.contains('compass-e') || marker.classList.contains('compass-w')) {
-          marker.style.transform = `translateY(-50%) rotate(${-angle}deg)`;
-        }
-      });
-    }
-  });
+		// Exit pointer lock so player can use the mouse to close the popup
+		if (document.pointerLockElement) {
+			document.exitPointerLock();
+		}
+
+		if (onPauseGame) onPauseGame();
+	});
+
+	// 3. Item Collected
+	document.addEventListener("itemCollected", (e) => {
+		const { collectedCount, totalCount } = e.detail;
+
+		// Update progress HUD
+		hudProgressText.textContent = `${collectedCount} / ${totalCount}`;
+		const pct = (collectedCount / totalCount) * 100;
+		hudProgressFill.style.width = `${pct}%`;
+	});
+
+	// 4. Game Won
+	document.addEventListener("gameWon", (e) => {
+		const { score, timeUsed } = e.detail;
+		wonScore.textContent = score;
+		wonTime.textContent = formatTime(Math.round(timeUsed));
+		modalWonOverlay.classList.add("active");
+
+		if (backgroundMusic && backgroundMusic.isPlaying) backgroundMusic.stop();
+		if (winMusic) {
+			try {
+				winMusic.play();
+			} catch (e) {}
+		}
+
+		// Exit pointer lock
+		if (document.pointerLockElement) {
+			document.exitPointerLock();
+		}
+
+		if (onPauseGame) onPauseGame();
+	});
+
+	// 5. Game Lost
+	document.addEventListener("gameLost", () => {
+		modalLostOverlay.classList.add("active");
+
+		if (backgroundMusic && backgroundMusic.isPlaying) backgroundMusic.stop();
+		if (loseMusic) {
+			try {
+				loseMusic.play();
+			} catch (e) {}
+		}
+
+		// Exit pointer lock
+		if (document.pointerLockElement) {
+			document.exitPointerLock();
+		}
+
+		if (onPauseGame) onPauseGame();
+	});
+
+	// 6. Game Paused / Resumed
+	document.addEventListener("gamePaused", () => {
+		modalPauseOverlay.classList.add("active");
+
+		// Exit pointer lock
+		if (document.pointerLockElement) {
+			document.exitPointerLock();
+		}
+
+		if (onPauseGame) onPauseGame();
+	});
+
+	document.addEventListener("gameResumed", () => {
+		modalPauseOverlay.classList.remove("active");
+		if (onResumeGame) onResumeGame();
+	});
+
+	// 7. Loading Progress
+	document.addEventListener("loadingProgress", (e) => {
+		const pct = Math.floor(e.detail.percent);
+		loadingBarFill.style.width = `${pct}%`;
+		loadingText.textContent = `Đang tải tài nguyên... ${pct}%`;
+	});
+
+	document.addEventListener("loadingComplete", (e) => {
+		loadingOverlay.classList.remove("active");
+		if (e.detail && e.detail.phase === 1) {
+			modalIntroOverlay.classList.add("active");
+		} else {
+			modalStoryOverlay.classList.add("active");
+		}
+	});
+
+	// 8. Compass Rotation
+	document.addEventListener("cameraRotated", (e) => {
+		if (compassDisc) {
+			const angle = e.detail.angle;
+			compassDisc.style.transform = `rotate(${angle}deg)`;
+
+			// Giữ cho các chữ N, E, S, W luôn đứng thẳng
+			const markers = compassDisc.querySelectorAll(".compass-marker");
+			markers.forEach((marker) => {
+				if (
+					marker.classList.contains("compass-n") ||
+					marker.classList.contains("compass-s")
+				) {
+					marker.style.transform = `translateX(-50%) rotate(${-angle}deg)`;
+				} else if (
+					marker.classList.contains("compass-e") ||
+					marker.classList.contains("compass-w")
+				) {
+					marker.style.transform = `translateY(-50%) rotate(${-angle}deg)`;
+				}
+			});
+		}
+	});
 }
