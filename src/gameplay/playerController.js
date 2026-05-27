@@ -67,33 +67,6 @@ export function initPlayer(scene, modelLoader, listener) {
 				activeAction = playerMixer.clipAction(clips[0]);
 				activeAction.play();
 			}
-
-			// --- THIẾT LẬP ÂM THANH BƯỚC CHÂN ---
-			if (listener) {
-				try {
-					const footstepSound = new THREE.PositionalAudio(listener);
-					const audioLoader = new THREE.AudioLoader();
-					audioLoader.load(
-						"/assets/audio/footstep.mp3",
-						(buffer) => {
-							footstepSound.setBuffer(buffer);
-							footstepSound.setLoop(true);
-							footstepSound.setVolume(
-								player.userData._desiredFootstepVol ?? 0.7,
-							);
-							footstepSound.setRefDistance(5);
-							player.add(footstepSound);
-							player.userData.footstep = footstepSound;
-						},
-						undefined,
-						(err) => {
-							console.warn("Không tìm thấy file âm thanh bước chân:", err);
-						},
-					);
-				} catch (err) {
-					console.warn("Không thể khởi tạo âm thanh bước chân:", err);
-				}
-			}
 		},
 		onError: (error) => console.error("🔥 LỖI TẢI THỎ DETECTIVE:", error),
 	});
@@ -186,40 +159,13 @@ export function updatePlayer(delta, camera) {
 		if (runClipName) {
 			fadeToAnimation(runClipName);
 		}
+		// Khóa trục Y ở vị trí mặt đất (0)
+		player.position.y = 0;
 
-		// --- PLAY ÂM THANH BƯỚC CHÂN ---
-		if (player.userData.footstep && !player.userData.footstep.isPlaying) {
-			try {
-				player.userData.footstep.play();
-			} catch (e) {
-				/* ignore */
-			}
+		// Cập nhật AnimationMixer
+		if (playerMixer) {
+			playerMixer.update(delta);
 		}
-	} else {
-		// --- CHUYỂN SANG HOẠT ẢNH ĐỨNG YÊN ---
-		const idleClipName = Object.keys(playerActions).find((name) =>
-			name.includes("idle"),
-		);
-		if (idleClipName) {
-			fadeToAnimation(idleClipName);
-		}
-
-		// --- DỪNG ÂM THANH BƯỚC CHÂN ---
-		if (player.userData.footstep && player.userData.footstep.isPlaying) {
-			try {
-				player.userData.footstep.pause();
-			} catch (e) {
-				/* ignore */
-			}
-		}
-	}
-
-	// Khóa trục Y ở vị trí mặt đất (0)
-	player.position.y = 0;
-
-	// Cập nhật AnimationMixer
-	if (playerMixer) {
-		playerMixer.update(delta);
 	}
 }
 
@@ -228,30 +174,16 @@ export function getPlayer() {
 }
 
 export function resetPlayer() {
-	if (player) {
-		player.position.set(0, 0, 0);
-		player.rotation.set(0, Math.PI, 0);
+	for (const key in keys) {
+		keys[key] = false;
+	}
 
-		// Clear keyboard input state
-		for (const key in keys) {
-			keys[key] = false;
-		}
-
-		if (playerMixer) {
-			const idleClipName = Object.keys(playerActions).find((name) =>
-				name.includes("idle"),
-			);
-			if (idleClipName) {
-				fadeToAnimation(idleClipName);
-			}
-		}
-
-		if (player.userData.footstep && player.userData.footstep.isPlaying) {
-			try {
-				player.userData.footstep.pause();
-			} catch (e) {
-				/* ignore */
-			}
+	if (playerMixer) {
+		const idleClipName = Object.keys(playerActions).find((name) =>
+			name.includes("idle"),
+		);
+		if (idleClipName) {
+			fadeToAnimation(idleClipName);
 		}
 	}
 }

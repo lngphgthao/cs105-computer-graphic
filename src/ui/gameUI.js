@@ -103,13 +103,6 @@ export function initGameUI({
 
       <div class="setting-row">
         <div class="setting-label-container">
-          <span class="setting-label">Âm Bước Chân</span>
-        </div>
-        <input type="range" min="0" max="1" step="0.01" value="0.7" class="setting-slider" id="slider-footstep">
-      </div>
-
-      <div class="setting-row">
-        <div class="setting-label-container">
           <span class="setting-label">Sáng Môi Trường</span>
         </div>
         <input type="range" min="0" max="2" step="0.01" value="0.35" class="setting-slider" id="slider-ambient">
@@ -367,7 +360,6 @@ export function initGameUI({
 	const sliderVolume = root.querySelector("#slider-volume");
 	const btnMuteToggle = root.querySelector("#btn-mute-toggle");
 
-	const sliderFootstep = root.querySelector("#slider-footstep");
 	const sliderAmbient = root.querySelector("#slider-ambient");
 	const sliderSun = root.querySelector("#slider-sun");
 
@@ -482,18 +474,7 @@ export function initGameUI({
 		}
 	});
 
-	// Footstep Volume
-	sliderFootstep.addEventListener("input", (e) => {
-		const v = parseFloat(e.target.value);
-		const player = getPlayer();
-		if (player && player.userData && player.userData.footstep) {
-			try {
-				player.userData.footstep.setVolume(v);
-			} catch (err) {}
-		} else if (player) {
-			player.userData._desiredFootstepVol = v;
-		}
-	});
+	// Footstep audio removed; no UI control.
 
 	// Ambient Light
 	sliderAmbient.addEventListener("input", (e) => {
@@ -748,6 +729,8 @@ export function initGameUI({
 			} catch (e) {}
 		}
 
+		// Footstep audio removed
+
 		// Exit pointer lock
 		if (document.pointerLockElement) {
 			document.exitPointerLock();
@@ -766,6 +749,8 @@ export function initGameUI({
 				loseMusic.play();
 			} catch (e) {}
 		}
+
+		// Footstep audio removed
 
 		// Exit pointer lock
 		if (document.pointerLockElement) {
