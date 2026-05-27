@@ -13,6 +13,7 @@ export function createModelLoader(scene) {
 			receiveShadow = true,
 			onLoad,
 			onError,
+			autoAdd = true,
 		} = options;
 
 		loader.load(
@@ -31,7 +32,7 @@ export function createModelLoader(scene) {
 					}
 				});
 
-				scene.add(model);
+				if (autoAdd) scene.add(model);
 
 				if (typeof onLoad === "function") {
 					// -------------------------------------------------------

@@ -52,6 +52,7 @@ import {
 	setObjectRenderMode,
 	createMist,
 	updateMist,
+	clearDelayedEnvironmentTasks,
 } from "./environment";
 
 const app = document.getElementById("app");
@@ -308,6 +309,12 @@ initGameUI({
 		isGameActive = false;
 		resetGame();
 		resetSpawnedItems(scene);
+		// Clear any pending delayed environment tasks (grass timers, spawned grass meshes)
+		try {
+			clearDelayedEnvironmentTasks(scene);
+		} catch (e) {
+			console.warn("Failed to clear delayed environment tasks:", e);
+		}
 		resetPlayer();
 	},
 });

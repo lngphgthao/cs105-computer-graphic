@@ -2,6 +2,7 @@ export {
 	buildEnvironment,
 	buildIntroDiorama,
 	loadSkyDome,
+	clearDelayedEnvironmentTasks,
 } from "./environmentBuilder.js";
 export {
 	createDemoObjects,

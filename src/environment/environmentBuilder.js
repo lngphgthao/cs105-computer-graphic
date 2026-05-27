@@ -52,6 +52,31 @@ const spawnedPositions = {
 	rocks: [],
 };
 
+// Timers and spawned mesh trackers so we can cancel/remove on reset
+const _delayedTimers = [];
+const _spawnedGrassMeshes = [];
+
+export function clearDelayedEnvironmentTasks(scene) {
+	// Clear any pending timers
+	for (const t of _delayedTimers) {
+		clearTimeout(t);
+	}
+	_delayedTimers.length = 0;
+
+	// Remove any grass meshes we added
+	for (const m of _spawnedGrassMeshes) {
+		if (m && m.parent === scene) {
+			scene.remove(m);
+		}
+	}
+	_spawnedGrassMeshes.length = 0;
+
+	// Reset spawned positions tracking to avoid further proximity placements
+	spawnedPositions.trees.length = 0;
+	spawnedPositions.mushroom_trees.length = 0;
+	spawnedPositions.rocks.length = 0;
+}
+
 export function buildEnvironment(scene, modelLoader, obstacles) {
 	loadTrees(scene, modelLoader);
 	loadMushroomTrees(scene, modelLoader);
@@ -184,6 +209,7 @@ export function buildIntroDiorama(scene, modelLoader) {
 			position: [5, 0, -5],
 			scale: [1, 1, 1],
 			rotation: [0, Math.random() * Math.PI, 0],
+			autoAdd: false,
 			onLoad: (model) => {
 				const tree = model.clone();
 				tree.scale.set(1.5, 1.5, 1.5);
@@ -198,6 +224,7 @@ export function buildIntroDiorama(scene, modelLoader) {
 			position: [-4, 0, 3],
 			scale: [1, 1, 1],
 			rotation: [0, Math.random() * Math.PI, 0],
+			autoAdd: false,
 			onLoad: (model) => {
 				const mushroom = model.clone();
 				mushroom.scale.set(1.2, 1.2, 1.2);
@@ -641,7 +668,7 @@ function loadGrassType1(scene, modelLoader) {
 			const baseScale = targetHeight / actualHeight;
 			const grassCount = 520;
 
-			setTimeout(() => {
+			const _t = setTimeout(() => {
 				// ⭐ Create proximity sampler with isolated PRNG
 				const pickPlacement = createProximityGrassSampler(
 					spawnedPositions,
@@ -683,9 +710,11 @@ function loadGrassType1(scene, modelLoader) {
 					});
 
 					scene.add(grassClone);
+					_spawnedGrassMeshes.push(grassClone);
 				}
 				console.log("🌿 ĐÃ RẢI XONG CỎ LOẠI 1!");
 			}, 2500);
+			_delayedTimers.push(_t);
 		},
 		onError: (error) => console.error("🔥 LỖI TẢI CỎ 1:", error),
 	});
@@ -714,7 +743,7 @@ function loadGrassType2(scene, modelLoader) {
 			const baseScale = targetHeight / actualHeight;
 			const grassCount = 1100;
 
-			setTimeout(() => {
+			const _t = setTimeout(() => {
 				// ⭐ Create proximity sampler with isolated PRNG
 				const pickPlacement = createProximityGrassSampler(
 					spawnedPositions,
@@ -764,9 +793,11 @@ function loadGrassType2(scene, modelLoader) {
 					});
 
 					scene.add(grassClone);
+					_spawnedGrassMeshes.push(grassClone);
 				}
 				console.log("🌱 ĐÃ RẢI XONG CỎ LOẠI 2!");
 			}, 3000); // Cho cỏ loại 2 chờ 3 giây
+			_delayedTimers.push(_t);
 		},
 		onError: (error) => console.error("🔥 LỖI TẢI CỎ 2:", error),
 	});
