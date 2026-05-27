@@ -1,4 +1,5 @@
 export {
+	DEFAULT_CAMERA_SETTINGS,
 	createCamera,
 	moveCamera,
 	updateCameraProjection,

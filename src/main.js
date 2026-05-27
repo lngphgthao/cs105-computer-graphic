@@ -1,29 +1,58 @@
 import * as THREE from "three";
+import "./styles.css";
+
+// Core
 import {
 	createCamera,
-	moveCamera,
-	updateCameraProjection,
-	initCameraControls,
-	updateCameraFollow,
-	autoRotateCamera,
 	createScene,
 	createRenderer,
+	initCameraControls,
+	moveCamera,
+	updateCameraProjection,
+	updateCameraFollow,
+	autoRotateCamera,
 	setupLighting,
 	setupResizeHandler,
 } from "./core";
 
-import { initPlayer, updatePlayer, resetPlayer, getPlayer, MAP_LIMIT } from "./gameplay/playerController";
-import { updateSpawning, resetSpawnedItems } from "./gameplay/spawnSystem";
-import { checkCollision } from "./gameplay/collisionSystem";
-import { addScore, getScore, getGameOver, togglePause, getPaused, resetGame } from "./gameplay/gameState";
-import { createTransformController } from "./gameplay/transformController";
-import { createModelLoader } from "./gameplay/modelLoader";
-import { initGameUI } from "./ui/gameUI";
-import { buildEnvironment, loadSkyDome, buildIntroDiorama } from "./environment/environmentBuilder";
-import { createGround, setObjectRenderMode } from "./environment/geometries";
-import { createMist, updateMist } from "./environment/mist";
-import { playCollectSound } from "./gameplay/audioSystem";
-import "./styles.css";
+// Gameplay
+import {
+	getPlayer,
+	initPlayer,
+	resetPlayer,
+	updatePlayer,
+	MAP_LIMIT,
+} from "./gameplay/playerController";
+
+import {
+	addScore,
+	getGameOver,
+	getPaused,
+	resetGame,
+	togglePause,
+} from "./gameplay/gameState";
+
+import {
+	checkCollision,
+	updateSpawning,
+	resetSpawnedItems,
+	createModelLoader,
+	playCollectSound,
+} from "./gameplay";
+
+// UI
+import { initGameUI } from "./ui";
+
+// Environment
+import {
+	buildEnvironment,
+	buildIntroDiorama,
+	loadSkyDome,
+	createGround,
+	setObjectRenderMode,
+	createMist,
+	updateMist,
+} from "./environment";
 
 const app = document.getElementById("app");
 if (!app) {
@@ -32,15 +61,25 @@ if (!app) {
 
 let loadingPhase = 1;
 
-THREE.DefaultLoadingManager.onProgress = function (url, itemsLoaded, itemsTotal) {
+THREE.DefaultLoadingManager.onProgress = function (
+	url,
+	itemsLoaded,
+	itemsTotal,
+) {
 	const percent = (itemsLoaded / itemsTotal) * 100;
-	document.dispatchEvent(new CustomEvent("loadingProgress", { detail: { percent, phase: loadingPhase } }));
+	document.dispatchEvent(
+		new CustomEvent("loadingProgress", {
+			detail: { percent, phase: loadingPhase },
+		}),
+	);
 };
 
 THREE.DefaultLoadingManager.onLoad = function () {
 	// Add a small delay to ensure loading screen is visible at 100%
 	setTimeout(() => {
-		document.dispatchEvent(new CustomEvent("loadingComplete", { detail: { phase: loadingPhase } }));
+		document.dispatchEvent(
+			new CustomEvent("loadingComplete", { detail: { phase: loadingPhase } }),
+		);
 	}, 500);
 };
 
@@ -80,7 +119,7 @@ audioLoader.load(
 		introMusic.setVolume(0.2);
 	},
 	undefined,
-	(err) => console.warn("No intro music found, user will add it later", err)
+	(err) => console.warn("No intro music found, user will add it later", err),
 );
 
 audioLoader.load(
@@ -91,7 +130,7 @@ audioLoader.load(
 		winMusic.setVolume(0.4);
 	},
 	undefined,
-	(err) => console.warn("No win music found, user will add it later", err)
+	(err) => console.warn("No win music found, user will add it later", err),
 );
 
 audioLoader.load(
@@ -102,7 +141,7 @@ audioLoader.load(
 		loseMusic.setVolume(0.4);
 	},
 	undefined,
-	(err) => console.warn("No lose music found, user will add it later", err)
+	(err) => console.warn("No lose music found, user will add it later", err),
 );
 
 let phase2Started = false;
@@ -111,12 +150,14 @@ let phase2Started = false;
 document.addEventListener("startPhase2Loading", () => {
 	if (phase2Started) {
 		// Environment is already loaded, transition directly to gameplay story
-		document.dispatchEvent(new CustomEvent("loadingComplete", { detail: { phase: 2 } }));
+		document.dispatchEvent(
+			new CustomEvent("loadingComplete", { detail: { phase: 2 } }),
+		);
 		return;
 	}
 	phase2Started = true;
 	loadingPhase = 2;
-	
+
 	// Load the rest of the 3D environment
 	buildEnvironment(scene, modelLoader, obstacles);
 
@@ -134,7 +175,7 @@ document.addEventListener("startPhase2Loading", () => {
 			}
 		},
 		undefined,
-		(err) => console.warn("No background music found", err)
+		(err) => console.warn("No background music found", err),
 	);
 });
 
@@ -243,100 +284,6 @@ window.natureExplorer = {
 // PHASE 1: CHỈ TẢI SKYDOME VÀ BỐ CỤC INTRO
 loadSkyDome(scene, modelLoader);
 buildIntroDiorama(scene, modelLoader);
-// ------- Simple UI controls for lighting and audio -------
-function createControlsPanel() {
-	const panel = document.createElement("div");
-	panel.style.position = "absolute";
-	panel.style.right = "12px";
-	panel.style.top = "12px";
-	panel.style.background = "rgba(0,0,0,0.45)";
-	panel.style.color = "#fff";
-	panel.style.padding = "8px";
-	panel.style.borderRadius = "6px";
-	panel.style.fontFamily = "sans-serif";
-	panel.style.fontSize = "13px";
-	panel.style.zIndex = "9999";
-
-	function makeRow(labelText, min, max, step, initial) {
-		const row = document.createElement("div");
-		row.style.marginBottom = "6px";
-
-		const label = document.createElement("div");
-		label.textContent = labelText;
-		label.style.marginBottom = "4px";
-
-		const input = document.createElement("input");
-		input.type = "range";
-		input.min = String(min);
-		input.max = String(max);
-		input.step = String(step);
-		input.value = String(initial);
-		input.style.width = "160px";
-
-		row.appendChild(label);
-		row.appendChild(input);
-		return { row, input };
-	}
-
-	const ambientRow = makeRow(
-		"Ambient Light",
-		0,
-		2,
-		0.01,
-		ambientLight?.intensity ?? 0.35,
-	);
-	const sunRow = makeRow("Sun Light", 0, 3, 0.01, sunlight?.intensity ?? 1.25);
-	const bgVolRow = makeRow(
-		"Music Volume",
-		0,
-		1,
-		0.01,
-		backgroundMusic?.getVolume ? backgroundMusic.getVolume() : 0.2,
-	);
-	const stepVolRow = makeRow("Footstep Vol", 0, 1, 0.01, 0.7);
-
-	panel.appendChild(ambientRow.row);
-	panel.appendChild(sunRow.row);
-	panel.appendChild(bgVolRow.row);
-	panel.appendChild(stepVolRow.row);
-
-	app.appendChild(panel);
-
-	// Wire up events
-	ambientRow.input.addEventListener("input", (e) => {
-		const v = parseFloat(e.target.value);
-		if (ambientLight) ambientLight.intensity = v;
-	});
-
-	sunRow.input.addEventListener("input", (e) => {
-		const v = parseFloat(e.target.value);
-		if (sunlight) sunlight.intensity = v;
-	});
-
-	bgVolRow.input.addEventListener("input", (e) => {
-		const v = parseFloat(e.target.value);
-		try {
-			backgroundMusic.setVolume(v);
-		} catch (err) {}
-	});
-
-	stepVolRow.input.addEventListener("input", (e) => {
-		const v = parseFloat(e.target.value);
-		const player = getPlayer();
-		if (player && player.userData && player.userData.footstep) {
-			try {
-				player.userData.footstep.setVolume(v);
-			} catch (err) {}
-		} else {
-			// store desired default for later when footstep exists
-			player && (player.userData._desiredFootstepVol = v);
-		}
-	});
-
-	return { panel, controls: { ambientRow, sunRow, bgVolRow, stepVolRow } };
-}
-
-// const ui = createControlsPanel();
 let isGameActive = false;
 
 initGameUI({
@@ -362,19 +309,8 @@ initGameUI({
 		resetGame();
 		resetSpawnedItems(scene);
 		resetPlayer();
-	}
+	},
 });
-
-function updateHudInfo() {
-	// const selectedName = transformController.getSelectedName();
-	// renderModeController.setExtraInfo([
-	// 	`Score: ${Math.floor(getScore())}`,
-	// 	getGameOver() ? "GAME OVER" : "Playing",
-	// 	`Selected object: ${selectedName}`,
-	// 	`Camera position: (${camera.position.x.toFixed(1)}, ${camera.position.y.toFixed(1)}, ${camera.position.z.toFixed(1)})`,
-	// 	`Camera projection: fov=${camera.fov.toFixed(1)}, near=${camera.near.toFixed(2)}, far=${camera.far.toFixed(1)}`,
-	// ]);
-}
 
 function handleCameraKeyboard(event) {
 	const cameraMoveStep = 0.6;
@@ -433,39 +369,30 @@ function handleCameraKeyboard(event) {
 			break;
 	}
 
-	if (changed) {
-		updateHudInfo();
-	}
-
 	return changed;
 }
 
 // Keydown capture blocker to prevent character movement before game starts
-window.addEventListener("keydown", (e) => {
-	if (!isGameActive) {
-		e.stopPropagation();
-		e.preventDefault();
-	}
-}, true); // Capture phase!
+window.addEventListener(
+	"keydown",
+	(e) => {
+		if (!isGameActive) {
+			e.stopPropagation();
+			e.preventDefault();
+		}
+	},
+	true,
+); // Capture phase!
 
 window.addEventListener("keydown", (event) => {
 	if (event.key === "Escape" && isGameActive) {
 		togglePause();
 	}
 
-	const handledByCamera = handleCameraKeyboard(event);
-	const handledByTransform =
-		typeof transformController !== "undefined"
-			? transformController.handleKeyboard(event)
-			: false;
-
-	if (handledByCamera || handledByTransform) {
-		updateHudInfo();
-	}
+	handleCameraKeyboard(event);
 });
 
 setupResizeHandler(renderer, camera);
-updateHudInfo();
 
 let previousTime = performance.now();
 let elapsedTime = 0;
@@ -478,7 +405,6 @@ function animate(now) {
 	if (isGameActive && !getPaused()) {
 		if (!getGameOver()) {
 			addScore(deltaSeconds * 5);
-			updateHudInfo();
 		}
 
 		updatePlayer(deltaSeconds, camera);
@@ -493,7 +419,9 @@ function animate(now) {
 		camera.getWorldDirection(dir);
 		// Compass disc rotation: Math.atan2(-x, -z)
 		const angle = Math.atan2(-dir.x, -dir.z) * (180 / Math.PI);
-		document.dispatchEvent(new CustomEvent('cameraRotated', { detail: { angle } }));
+		document.dispatchEvent(
+			new CustomEvent("cameraRotated", { detail: { angle } }),
+		);
 	} else if (!isGameActive) {
 		// Just keep the camera updated to follow the player before game starts
 		const player = getPlayer();
