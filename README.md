@@ -24,6 +24,31 @@ Dự án hiện tại đã hoàn thiện một vòng chơi cơ bản gồm:
 - Âm thanh nền, hiệu ứng nhặt đồ, nhạc thắng/thua.
 - Môi trường rừng được dựng bằng model, ground, mist và ánh sáng.
 
+## Phân công thành viên
+
+| Tên thành viên      | MSSV     | Github                                                     | Nhiệm vụ, vai trò                                                        |
+| ------------------- | -------- | ---------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Lê Ngọc Phương Thảo | 23521467 | [@lngphgthao](https://github.com/lngphgthao)               | Graphics Core: Camera, ánh sáng, renderer, resize, vòng lặp render       |
+| Đinh Hoàng Phúc     | 23521193 | [@DinhHoangPhuc3010](https://github.com/DinhHoangPhuc3010) | Environment & Assets: Dựng rừng, ground, mist, vị trí model, texture     |
+| Mai Lê Bá Vương     | 23521821 | [@bavuong2005](https://github.com/bavuong2005)             | Gameplay Logic: Người chơi, collision, spawn, game state, audio          |
+| Trần Thị Cẩm Tú     | 23521704 | [@TuTTC](https://github.com/TuTTC)                         | Interaction & UI: HUD, modal, settings, luồng gợi ý, phản hồi người dùng |
+
+## Điều khiển
+
+- **Di chuyển:** `W` `A` `S` `D` hoặc các phím mũi tên
+- **Camera:** kéo chuột / cuộn chuột để xoay và zoom
+- **Tạm dừng:** `Esc`
+- **Bật/tắt nhạc:** `B`
+
+## Tính năng chính
+
+- Menu intro, luồng tải game, story modal và hint modal.
+- Nhiệm vụ thu thập bảo vật theo thứ tự, có đồng hồ đếm ngược và tính điểm.
+- Nhân vật có animation và âm thanh bước chân.
+- Spawn vật phẩm động và xử lý va chạm.
+- Cảnh rừng với lighting, mist, ground và model nhập ngoài.
+- Giao diện hiển thị tiến độ, thời gian, cài đặt và trạng thái game.
+
 ## Hướng dẫn cài đặt
 
 ### Clone repository
@@ -76,28 +101,3 @@ http://localhost:5173).
   thanh và tải model.
 - `src/ui`: overlay, HUD, settings drawer, hint modal và menu flow.
 - `assets`: audio, texture và các model GLB sử dụng trong game.
-
-## Điều khiển
-
-- **Di chuyển:** `W` `A` `S` `D` hoặc các phím mũi tên
-- **Camera:** kéo chuột / cuộn chuột để xoay và zoom
-- **Tạm dừng:** `Esc`
-- **Bật/tắt nhạc:** `B`
-
-## Tính năng chính
-
-- Menu intro, luồng tải game, story modal và hint modal.
-- Nhiệm vụ thu thập bảo vật theo thứ tự, có đồng hồ đếm ngược và tính điểm.
-- Nhân vật có animation và âm thanh bước chân.
-- Spawn vật phẩm động và xử lý va chạm.
-- Cảnh rừng với lighting, mist, ground và model nhập ngoài.
-- Giao diện hiển thị tiến độ, thời gian, cài đặt và trạng thái game.
-
-## Phân công thành viên
-
-| Tên thành viên      | MSSV     | Github                                                     | Nhiệm vụ, vai trò                                                        |
-| ------------------- | -------- | ---------------------------------------------------------- | ------------------------------------------------------------------------ |
-| Lê Ngọc Phương Thảo | 23521467 | [@lngphgthao](https://github.com/lngphgthao)               | Graphics Core: Camera, ánh sáng, renderer, resize, vòng lặp render       |
-| Đinh Hoàng Phúc     | 23521193 | [@DinhHoangPhuc3010](https://github.com/DinhHoangPhuc3010) | Environment & Assets: Dựng rừng, ground, mist, vị trí model, texture     |
-| Mai Lê Bá Vương     | 23521821 | [@bavuong2005](https://github.com/bavuong2005)             | Gameplay Logic: Người chơi, collision, spawn, game state, audio          |
-| Trần Thị Cẩm Tú     | 23521704 | [@TuTTC](https://github.com/TuTTC)                         | Interaction & UI: HUD, modal, settings, luồng gợi ý, phản hồi người dùng |
