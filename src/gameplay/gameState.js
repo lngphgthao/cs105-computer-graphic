@@ -57,6 +57,7 @@ const ITEMS = [
 	},
 ];
 
+// Game state
 let score = 0;
 let isGameOver = false;
 let isGameWon = false;
@@ -65,7 +66,7 @@ let timeRemaining = 300; // 5 phút = 300 giây
 let currentItemIndex = 0; // Vật phẩm đang cần tìm (0 → 4)
 let items = JSON.parse(JSON.stringify(ITEMS));
 
-// --- Lấy vật phẩm hiện tại đang cần tìm ---
+// Selectors
 export function getCurrentItem() {
 	if (currentItemIndex < items.length) {
 		return items[currentItemIndex];
@@ -73,13 +74,11 @@ export function getCurrentItem() {
 	return null;
 }
 
-// --- Lấy gợi ý cho vật phẩm hiện tại ---
 export function getCurrentHint() {
 	const item = getCurrentItem();
 	return item ? item.hint : null;
 }
 
-// --- Lấy toàn bộ danh sách items (cho UI hiển thị tiến độ) ---
 export function getItems() {
 	return items;
 }
@@ -96,7 +95,7 @@ export function getTimeRemaining() {
 	return timeRemaining;
 }
 
-// --- Đếm ngược thời gian ---
+// Gameplay events
 export function decrementTime(amount) {
 	if (isGameOver || isGameWon || isPaused) return;
 	timeRemaining = Math.max(0, timeRemaining - amount);
@@ -114,7 +113,6 @@ export function decrementTime(amount) {
 	}
 }
 
-// --- Thu thập vật phẩm hiện tại ---
 export function collectCurrentItem() {
 	const item = getCurrentItem();
 	if (!item || item.collected || isGameOver || isGameWon) return false;
@@ -166,7 +164,6 @@ export function collectCurrentItem() {
 	return true;
 }
 
-// --- Hàm getGameOver: trả true khi thua HOẶC thắng (để dừng game loop) ---
 export function getGameOver() {
 	return isGameOver || isGameWon;
 }
@@ -191,6 +188,7 @@ export function getGameWon() {
 	return isGameWon;
 }
 
+// Mutators
 export function addScore(value) {
 	score += value;
 }

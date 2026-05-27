@@ -3,6 +3,7 @@ const RENDER_MODES = ["solid", "lines", "points"];
 export function createRenderModeController(onModeChange) {
 	let mode = "solid";
 
+	// Panel UI
 	const panel = document.createElement("div");
 	panel.className = "hud-panel";
 	panel.innerHTML = `
@@ -20,9 +21,10 @@ export function createRenderModeController(onModeChange) {
 	const modeText = panel.querySelector("[data-mode]");
 	const extraText = panel.querySelector("[data-extra]");
 
+	// State helpers
 	function setMode(nextMode) {
 		if (!RENDER_MODES.includes(nextMode)) {
-			return;	
+			return;
 		}
 
 		mode = nextMode;
@@ -34,6 +36,7 @@ export function createRenderModeController(onModeChange) {
 		extraText.innerHTML = lines.map((line) => `<p>${line}</p>`).join("");
 	}
 
+	// Keyboard shortcuts
 	function onKeyDown(event) {
 		if (event.code === "Digit1") {
 			setMode("solid");

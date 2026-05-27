@@ -1,22 +1,23 @@
 import * as THREE from "three";
 import { getGameOver } from "./gameState";
 
+// Player runtime state
 let player;
 const keys = {};
 let speed = 8; // Tốc độ di chuyển cố định cho chế độ đi cảnh
 export const MAP_LIMIT = 50;
 
-// --- BIẾN QUẢN LÝ HOẠT ẢNH ---
+// Animation state
 let playerMixer = null;
 let playerActions = {};
 let activeAction = null;
 
-// Pre-allocate vector — tránh tạo mới mỗi frame gây lag do GC
+// Pre-allocated vectors to avoid per-frame garbage collection
 const _moveDir = new THREE.Vector3();
 const _camForward = new THREE.Vector3();
 const _camRight = new THREE.Vector3();
 
-// Hàm chuyển đổi animation mượt mà (cross-fade)
+// Helpers
 function fadeToAnimation(clipName) {
 	const targetAction = playerActions[clipName];
 	if (!targetAction || targetAction === activeAction) return;
@@ -28,7 +29,7 @@ function fadeToAnimation(clipName) {
 	activeAction = targetAction;
 }
 
-// Truyền thêm modelLoader và listener vào hàm init
+// Public API
 export function initPlayer(scene, modelLoader, listener) {
 	player = new THREE.Group();
 	scene.add(player);

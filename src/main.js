@@ -93,6 +93,9 @@ const camera = createCamera({
 	position: { x: 12, y: 10, z: 16 },
 });
 
+// Lighting
+const { ambientLight, sunlight } = setupLighting(scene);
+
 // Khởi tạo OrbitControls để cho phép dùng chuột xoay góc nhìn
 initCameraControls(camera, renderer.domElement);
 // Audio listener for music / positional sounds
@@ -110,6 +113,20 @@ const backgroundMusic = new THREE.Audio(listener);
 const introMusic = new THREE.Audio(listener);
 const winMusic = new THREE.Audio(listener);
 const loseMusic = new THREE.Audio(listener);
+
+let musicEnabled = true;
+
+window.addEventListener("keydown", (e) => {
+	if (e.code === "KeyB") {
+		musicEnabled = !musicEnabled;
+		if (musicEnabled) {
+			if (backgroundMusic.buffer && !backgroundMusic.isPlaying)
+				backgroundMusic.play();
+		} else {
+			if (backgroundMusic.isPlaying) backgroundMusic.pause();
+		}
+	}
+});
 
 // Load intro music early
 audioLoader.load(
@@ -179,21 +196,6 @@ document.addEventListener("startPhase2Loading", () => {
 		(err) => console.warn("No background music found", err),
 	);
 });
-
-let musicEnabled = true;
-window.addEventListener("keydown", (e) => {
-	if (e.code === "KeyB") {
-		musicEnabled = !musicEnabled;
-		if (musicEnabled) {
-			if (backgroundMusic.buffer && !backgroundMusic.isPlaying)
-				backgroundMusic.play();
-		} else {
-			if (backgroundMusic.isPlaying) backgroundMusic.pause();
-		}
-	}
-});
-// Setup lighting and keep references so we can adjust them at runtime
-const { ambientLight, sunlight } = setupLighting(scene);
 
 // Khởi tạo mặt đất
 const terrain = createGround();
@@ -319,66 +321,6 @@ initGameUI({
 	},
 });
 
-function handleCameraKeyboard(event) {
-	const cameraMoveStep = 0.6;
-	let changed = false;
-
-	switch (event.code) {
-		case "KeyJ":
-			moveCamera(camera, { x: -cameraMoveStep });
-			changed = true;
-			break;
-		case "KeyL":
-			moveCamera(camera, { x: cameraMoveStep });
-			changed = true;
-			break;
-		case "KeyI":
-			moveCamera(camera, { z: -cameraMoveStep });
-			changed = true;
-			break;
-		case "KeyK":
-			moveCamera(camera, { z: cameraMoveStep });
-			changed = true;
-			break;
-		case "KeyU":
-			moveCamera(camera, { y: cameraMoveStep });
-			changed = true;
-			break;
-		case "KeyO":
-			moveCamera(camera, { y: -cameraMoveStep });
-			changed = true;
-			break;
-		case "KeyN":
-			updateCameraProjection(camera, { near: camera.near - 0.05 });
-			changed = true;
-			break;
-		case "KeyM":
-			updateCameraProjection(camera, { near: camera.near + 0.05 });
-			changed = true;
-			break;
-		case "Comma":
-			updateCameraProjection(camera, { far: camera.far - 5 });
-			changed = true;
-			break;
-		case "Period":
-			updateCameraProjection(camera, { far: camera.far + 5 });
-			changed = true;
-			break;
-		case "KeyZ":
-			updateCameraProjection(camera, { fov: camera.fov - 1 });
-			changed = true;
-			break;
-		case "KeyX":
-			updateCameraProjection(camera, { fov: camera.fov + 1 });
-			changed = true;
-			break;
-		default:
-			break;
-	}
-
-	return changed;
-}
-
 // Keydown capture blocker to prevent character movement before game starts
 window.addEventListener(
 	"keydown",
@@ -395,8 +337,6 @@ window.addEventListener("keydown", (event) => {
 	if (event.key === "Escape" && isGameActive) {
 		togglePause();
 	}
-
-	handleCameraKeyboard(event);
 });
 
 setupResizeHandler(renderer, camera);
