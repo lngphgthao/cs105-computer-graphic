@@ -166,6 +166,14 @@ export function updatePlayer(delta, camera) {
 		}
 		// Khóa trục Y ở vị trí mặt đất (0)
 		player.position.y = 0;
+	} else {
+		// Khi dừng di chuyển, chuyển lại về idle
+		const idleClipName = Object.keys(playerActions).find((name) =>
+			name.includes("idle"),
+		);
+		if (idleClipName) {
+			fadeToAnimation(idleClipName);
+		}
 	}
 
 	// Luôn cập nhật AnimationMixer (cả khi đứng yên để Idle animation chạy)
