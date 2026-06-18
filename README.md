@@ -24,6 +24,51 @@ Dự án hiện tại đã hoàn thiện một vòng chơi cơ bản gồm:
 - Âm thanh nền, hiệu ứng nhặt đồ, nhạc thắng/thua.
 - Môi trường rừng được dựng bằng model, ground, mist và ánh sáng.
 
+## Hướng dẫn cài đặt
+
+### 1. Chuẩn bị môi trường
+
+- Cài đặt **Node.js** phiên bản 18 trở lên.
+- Đảm bảo máy có sẵn **npm** đi kèm với Node.js.
+
+### 2. Clone repository
+
+```bash
+git clone https://github.com/lngphgthao/cs105-computer-graphic.git
+cd cs105-computer-graphic
+```
+
+### 3. Cài đặt dependencies
+
+```bash
+npm install
+```
+
+### 4. Chạy source code ở chế độ development
+
+```bash
+npm run dev
+```
+
+Sau đó mở đường dẫn Vite hiển thị trong terminal, thường là
+http://localhost:5173.
+
+### 5. Build và kiểm tra bản chạy
+
+Để build source code thành bản tĩnh:
+
+```bash
+npm run build
+```
+
+Nếu muốn kiểm tra bản build sau khi hoàn tất, chạy:
+
+```bash
+npm run preview
+```
+
+Rồi mở đường dẫn Vite hiển thị trong terminal để xem bản build đã chạy đúng.
+
 ## Phân công thành viên
 
 | Tên thành viên      | MSSV     | Github                                                     | Nhiệm vụ, vai trò                                                        |
@@ -48,30 +93,6 @@ Dự án hiện tại đã hoàn thiện một vòng chơi cơ bản gồm:
 - Spawn vật phẩm động và xử lý va chạm.
 - Cảnh rừng với lighting, mist, ground và model nhập ngoài.
 - Giao diện hiển thị tiến độ, thời gian, cài đặt và trạng thái game.
-
-## Hướng dẫn cài đặt
-
-### Clone repository
-
-```bash
-git clone https://github.com/lngphgthao/cs105-computer-graphic.git
-cd cs105-computer-graphic
-```
-
-### Cài đặt dependencies
-
-```bash
-npm install
-```
-
-### Chạy development server
-
-```bash
-npm run dev
-```
-
-Sau đó mở đường dẫn Vite hiển thị trong terminal (thường là
-http://localhost:5173).
 
 ## Cấu trúc repo
 

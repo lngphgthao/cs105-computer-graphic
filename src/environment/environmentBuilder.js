@@ -3,11 +3,13 @@ import * as THREE from "three";
 // ==========================================
 // THIẾT LẬP KÍCH THƯỚC BẢN ĐỒ (MAP BOUNDARIES)
 // ==========================================
-// Mặt đất của bạn là 100x100 (từ -50 đến +50).
-// Ta chừa lại 4 đơn vị ở mép (buffer) để cành lá/rìa đá không bị tràn ra ngoài không khí.
-const MAX_BOUND = 40; // Giới hạn tuyệt đối an toàn là -40 đến +40
-const MAP_LIMIT = MAX_BOUND * 2; // = 80 (Dùng để nhân với Math.random)
-const GRASS_LIMIT = MAX_BOUND; // Cỏ cũng không được mọc vượt quá 40
+// Mặt đất là 100x100 (từ -50 đến +50).
+// Chừa một viền nhỏ để asset lớn không bị tràn ra ngoài rìa plane.
+const GROUND_HALF_SIZE = 50;
+const EDGE_BUFFER = 2;
+const MAX_BOUND = GROUND_HALF_SIZE - EDGE_BUFFER; // Giới hạn an toàn: -48 đến +48
+const MAP_LIMIT = MAX_BOUND * 2; // = 96 (Dùng để nhân với Math.random)
+const GRASS_LIMIT = MAX_BOUND; // Cỏ cũng không được mọc vượt quá 48
 
 // ==========================================
 // SEED CONFIGURATION
@@ -98,8 +100,8 @@ export function buildEnvironment(scene, modelLoader, obstacles) {
  */
 function createGrassSampler(clusterCount, spread) {
 	const clusters = Array.from({ length: clusterCount }, () => ({
-		x: (Math.random() - 0.5) * 82,
-		z: (Math.random() - 0.5) * 82,
+		x: (Math.random() - 0.5) * (GRASS_LIMIT * 1.5),
+		z: (Math.random() - 0.5) * (GRASS_LIMIT * 1.5),
 		radius: spread * (0.7 + Math.random() * 0.6),
 	}));
 
@@ -195,6 +197,29 @@ function createProximityGrassSampler(
 				GRASS_LIMIT,
 			),
 		};
+	};
+}
+
+/**
+ * Edge-focused sampler for filling sparse map borders.
+ * Places points in an outer ring band near MAX_BOUND.
+ */
+function createEdgeGrassSampler(randomFn, innerRatio = 0.8) {
+	const innerBound = MAX_BOUND * innerRatio;
+
+	return () => {
+		const useXBand = randomFn() < 0.5;
+		const edgeSign = randomFn() < 0.5 ? -1 : 1;
+
+		if (useXBand) {
+			const x = edgeSign * (innerBound + randomFn() * (MAX_BOUND - innerBound));
+			const z = (randomFn() - 0.5) * (MAX_BOUND * 2);
+			return { x, z };
+		}
+
+		const x = (randomFn() - 0.5) * (MAX_BOUND * 2);
+		const z = edgeSign * (innerBound + randomFn() * (MAX_BOUND - innerBound));
+		return { x, z };
 	};
 }
 
@@ -597,7 +622,7 @@ function loadMushrooms_type2(scene, modelLoader) {
 				for (let i = 0; i < treeCount; i++) {
 					const treeClone = model.clone();
 
-					// ⭐ Cố định toạ độ XZ - Dùng MAP_LIMIT (giả sử đã khai báo ngoài là 85)
+					// ⭐ Cố định toạ độ XZ - Dùng MAP_LIMIT hiện tại
 					const randomX = (random() - 0.5) * MAP_LIMIT;
 					const randomZ = (random() - 0.5) * MAP_LIMIT;
 
@@ -666,7 +691,7 @@ function loadGrassType1(scene, modelLoader) {
 			const targetHeight = 1.8;
 			const actualHeight = size.y > 0 ? size.y : 1;
 			const baseScale = targetHeight / actualHeight;
-			const grassCount = 520;
+			const grassCount = 900;
 
 			const _t = setTimeout(() => {
 				// ⭐ Create proximity sampler with isolated PRNG
@@ -676,9 +701,13 @@ function loadGrassType1(scene, modelLoader) {
 					12,
 					22,
 				);
+				const pickEdgePlacement = createEdgeGrassSampler(random, 0.81);
 				for (let i = 0; i < grassCount; i++) {
 					const grassClone = model.clone();
-					const { x, z } = pickPlacement();
+					const useEdgePlacement = random() < 0.4;
+					const { x, z } = useEdgePlacement
+						? pickEdgePlacement()
+						: pickPlacement();
 
 					// 1. Chừa đường đi ở giữa cho nhân vật
 					if (Math.max(Math.abs(x), Math.abs(z)) < 1.5) continue;
@@ -741,7 +770,7 @@ function loadGrassType2(scene, modelLoader) {
 			const targetHeight = 0.8;
 			const actualHeight = size.y > 0 ? size.y : 1;
 			const baseScale = targetHeight / actualHeight;
-			const grassCount = 1100;
+			const grassCount = 700;
 
 			const _t = setTimeout(() => {
 				// ⭐ Create proximity sampler with isolated PRNG
@@ -751,9 +780,13 @@ function loadGrassType2(scene, modelLoader) {
 					10,
 					20,
 				);
+				const pickEdgePlacement = createEdgeGrassSampler(random, 0.81);
 				for (let i = 0; i < grassCount; i++) {
 					const grassClone = model.clone();
-					const { x, z } = pickPlacement();
+					const useEdgePlacement = random() < 0.4;
+					const { x, z } = useEdgePlacement
+						? pickEdgePlacement()
+						: pickPlacement();
 
 					// 1. Chừa đường đi ở giữa cho nhân vật
 					if (Math.max(Math.abs(x), Math.abs(z)) < 1.5) continue;
